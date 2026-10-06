@@ -1,0 +1,19 @@
+# miseのローカル状態（依存関係のlock補助ファイルは追跡する）
+.mise/*
+!.mise/locks/
+!.mise/locks/**
+mise.local.toml
+mise.local.lock
+
+# Python
+.venv/
+b3/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# エディタ / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
