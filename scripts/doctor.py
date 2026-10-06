@@ -81,7 +81,7 @@ def windows_apps() -> list[dict[str, str]]:
 
 
 def gui_report() -> int:
-    print("\nGUIアプリ（GIMP: B4、KiCad / DYNAMIXEL Wizard 2: B3）")
+    print("\nGUIアプリ（GIMP、KiCad、DYNAMIXEL Wizard 2）")
     manifest = json.loads((Path(__file__).resolve().parents[1] / "config/windows-apps.json").read_text(encoding="utf-8"))
     installed = windows_apps() if os.name == "nt" else []
     missing = 0

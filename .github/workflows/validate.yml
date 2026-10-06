@@ -59,3 +59,14 @@ jobs:
         run: uv run --locked --project b3 python -B -m unittest discover -s scripts -p 'test_*.py'
       - name: 環境診断
         run: uv run --locked --project b3 python scripts/doctor.py
+
+  windows-clean-bootstrap:
+    name: Windowsクリーンbootstrap
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Gitなし・CLIなし相当から初期構築を検証
+        shell: powershell
+        run: |
+          $content = [IO.File]::ReadAllText((Resolve-Path 'scripts/test-clean-bootstrap.ps1'), [Text.UTF8Encoding]::new($false))
+          & ([ScriptBlock]::Create($content)) -RepositoryRoot $env:GITHUB_WORKSPACE
