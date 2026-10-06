@@ -1,0 +1,35 @@
+version = 1
+revision = 5
+requires-python = "==3.13.*"
+
+[[package]]
+name = "dynamixel-sdk"
+version = "4.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyserial" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c0/93/87fb2aa84c173a93397ed165827853a54177d13e55dc3e240f400bc00247/dynamixel_sdk-4.1.0.tar.gz", hash = "sha256:9ffcc12ab72623f4bf6c0e1df8cd256a1fa19a7099204c002ff9b7fc0027e26d", size = 29655, upload-time = "2026-09-14T04:42:20.029Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/01/4a/c58bf575b5eec48ac3fe54c74c1fdd5a456ac8b03249f5e53dc0be503041/dynamixel_sdk-4.1.0-py3-none-any.whl", hash = "sha256:4cb91491edcb5c0b9d7eda34935c26ae6a37c1fe766cc6c4b58bc6583fb941f2", size = 103484, upload-time = "2026-09-14T04:42:18.661Z" },
+]
+
+[[package]]
+name = "pyserial"
+version = "3.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/7d/ae3f0a63f41e4d2f6cb66a5b57197850f919f59e558159a4dd3a818f5082/pyserial-3.5.tar.gz", hash = "sha256:3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb", size = 159125, upload-time = "2020-11-23T03:59:15.045Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl", hash = "sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0", size = 90585, upload-time = "2020-11-23T03:59:13.41Z" },
+]
+
+[[package]]
+name = "xrobotlab-b3-environment"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "dynamixel-sdk" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "dynamixel-sdk", specifier = "==4.1.0" }]

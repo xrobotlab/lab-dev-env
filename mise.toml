@@ -1,0 +1,10 @@
+[tools]
+python = "3.13.16"
+node = "24.21.0"
+uv = "0.12.23"
+just = "1.58.0"
+gh = "2.102.0"
+"pypi:platformio" = "6.1.19"
+
+[settings]
+lockfile = true
