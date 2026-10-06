@@ -5,7 +5,7 @@
 ## Git / GitHub CLI
 
 - [Git for Windows 2.56.0.windows.2公式リリース](https://github.com/git-for-windows/git/releases/tag/v2.56.0.windows.2)にPortableGit x64のファイル名とSHA-256が掲載されています。`config/windows-apps.json` の固定値と一致しています。
-- [公式の展開手順](https://gitforwindows.org/zip-archives-extracting-the-released-archives.html)が `-y -gm2 -InstallPath="…"` を文書化しています。指定するWindowsパスのバックスラッシュは二重にします。ユーザー領域へ展開し、GitがないPCでもZIP取得から始められます。
+- [公式の展開手順](https://gitforwindows.org/zip-archives-extracting-the-released-archives.html)は自己展開アーカイブの `-y -gm2` を文書化しています。[現行PortableGit生成スクリプト](https://github.com/git-for-windows/build-extra/blob/main/portable/release.sh)では、既定展開先をアーカイブと同じ場所の `PortableGit` とし、展開後に `post-install.bat` を実行します。bootstrapは一時領域へこの既定方式で展開し、`cmd/git.exe` を確認してからユーザー領域へ移動します。
 - [mise公式レジストリ](https://mise.jdx.dev/registry.html)にGitHub CLIの `aqua:cli/cli` バックエンドがあります。gh 2.102.0のWindows / Linux / macOS用アーカイブとSHA-256は[公式リリースの配布物一覧](https://github.com/cli/cli/releases/expanded_assets/v2.102.0)と照合できます。導入は認証・組織参加とは別です。
 
 ## GIMP

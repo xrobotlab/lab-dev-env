@@ -16,6 +16,7 @@
 
 - [標準ツールと固定バージョン](reference/tool-versions.md)
 - [インストーラー・配布物の確認根拠](reference/installer-evidence.md)
+- [Windows検証範囲](reference/windows-validation.md)
 
 ## ADR
 

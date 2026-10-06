@@ -10,6 +10,12 @@ $MiseExe = Join-Path $MiseBinDir "mise.exe"
 $MiseShims = Join-Path $MiseRoot "shims"
 $TemporaryRoot = $null
 $OldLocation = Get-Location
+$IsGitHubCleanBootstrapCi = (
+    $env:GITHUB_ACTIONS -eq "true" -and
+    $env:RUNNER_ENVIRONMENT -eq "github-hosted" -and
+    $env:LAB_DEV_ENV_CLEAN_BOOTSTRAP_CI -eq "1"
+)
+$SkipGui = $IsGitHubCleanBootstrapCi
 
 function Get-VerifiedDownload {
     param([string]$Url, [string]$Sha256, [string]$Name)
@@ -91,8 +97,13 @@ function Invoke-Checked {
 
 try {
     $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
-    if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    $isAdministrator = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    $allowCiAdministrator = $IsGitHubCleanBootstrapCi
+    if ($isAdministrator -and -not $allowCiAdministrator) {
         throw "管理者として実行しないでください。通常権限のターミナルから bootstrap.cmd を実行してください。"
+    }
+    if ($isAdministrator -and $allowCiAdministrator) {
+        Write-Host "GitHub Actionsのクリーンbootstrap試験として管理者ガードを通過します。"
     }
 
     $arch = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
@@ -118,8 +129,17 @@ try {
         $gitExe = Join-Path $gitCmd 'git.exe'
         if (-not (Test-Path -LiteralPath $gitExe)) {
             $archive = Get-VerifiedDownload $apps.git.url $apps.git.sha256 'PortableGit.7z.exe'
-            $escapedDirectory = $gitDirectory.Replace('\', '\\')
-            Invoke-Installer $archive ('-y -gm2 -InstallPath="' + $escapedDirectory + '"')
+            $extractedGit = Join-Path $TemporaryRoot 'PortableGit'
+            Invoke-Installer $archive '-y -gm2'
+            $extractedGitExe = Join-Path $extractedGit 'cmd\git.exe'
+            if (-not (Test-Path -LiteralPath $extractedGitExe)) {
+                throw "PortableGitの展開結果を確認できません: $extractedGitExe"
+            }
+            if (Test-Path -LiteralPath $gitDirectory) {
+                Remove-Item -LiteralPath $gitDirectory -Recurse -Force
+            }
+            New-Item -ItemType Directory -Force -Path (Split-Path -Parent $gitDirectory) | Out-Null
+            Move-Item -LiteralPath $extractedGit -Destination $gitDirectory
         }
         Invoke-Checked -FilePath $gitExe -Arguments @('--version')
         $env:Path = "$gitCmd;$env:Path"
@@ -162,13 +182,22 @@ try {
     [Environment]::SetEnvironmentVariable("Path", (($pathDirectories + $parts) -join ";"), "User")
 
     # GUIのキャンセル後にも導入済みCLIを使えるよう、PATH保存後に対話導入する。
-    Install-GuiApp 'gimp' $apps.gimp
-    Install-GuiApp 'kicad' $apps.kicad
+    # CIのクリーンbootstrap試験では、対話GUIだけを明示的に省略する。
+    if ($SkipGui) {
+        Write-Host "GitHub Actionsのクリーンbootstrap試験ではGUIアプリの導入を省略します。"
+    } else {
+        Install-GuiApp 'gimp' $apps.gimp
+        Install-GuiApp 'kicad' $apps.kicad
+    }
 
     Invoke-Checked -FilePath $MiseExe -Arguments @("exec", "--", "just", "doctor")
 
     Write-Host ""
-    Write-Host "CLIと対話式GUIセットアップが完了しました。DYNAMIXEL Wizard 2 と必要なDocker/ドライバはREADMEの手動手順を確認してください。"
+    if ($SkipGui) {
+        Write-Host "CLIセットアップが完了しました。GUIアプリは導入していません。"
+    } else {
+        Write-Host "CLIと対話式GUIセットアップが完了しました。DYNAMIXEL Wizard 2 と必要なDocker/ドライバはREADMEの手動手順を確認してください。"
+    }
     Write-Host "ターミナルを再起動し、just doctor-full でGUIを含めた準備を確認してください。"
 }
 catch {

@@ -38,8 +38,8 @@ function Start-Process {
 }
 $script:InstallerExitCode = 0
 $script:ExpectedWindowStyle = 'Hidden'
-Invoke-Installer 'archive.exe' '-y -gm2 -InstallPath="C:\\Users\\研究室 PC\\PortableGit"'
-Assert-True ($script:ObservedArguments -eq '-y -gm2 -InstallPath="C:\\Users\\研究室 PC\\PortableGit"') 'PortableGitの引数は空白・日本語・バックスラッシュを保持する必要があります。'
+Invoke-Installer 'archive.exe' '-y -gm2'
+Assert-True ($script:ObservedArguments -eq '-y -gm2') 'PortableGitは確認済みの無人展開引数だけを使用する必要があります。'
 $script:ExpectedWindowStyle = 'Normal'
 Invoke-Installer 'installer.exe' '/currentuser' -Interactive
 Assert-True ($script:ObservedArguments -eq '/currentuser') '対話導入ではユーザー単位の引数だけを渡します。'
