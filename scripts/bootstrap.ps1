@@ -17,6 +17,42 @@ $IsGitHubCleanBootstrapCi = (
 )
 $SkipGui = $IsGitHubCleanBootstrapCi
 
+function Test-WindowsSandbox {
+    param(
+        [string]$Username = $env:USERNAME,
+        [object]$ContainersRegistryPresent = $null,
+        [string]$Manufacturer = "",
+        [string]$Model = ""
+    )
+
+    if ($Username -ne 'WDAGUtilityAccount') {
+        return $false
+    }
+
+    if ($null -eq $ContainersRegistryPresent) {
+        $ContainersRegistryPresent = Test-Path -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Containers'
+    }
+    if (-not [bool]$ContainersRegistryPresent) {
+        return $false
+    }
+
+    if (-not $Manufacturer -or -not $Model) {
+        try {
+            $computerSystem = Get-CimInstance Win32_ComputerSystem -ErrorAction Stop
+            $Manufacturer = [string]$computerSystem.Manufacturer
+            $Model = [string]$computerSystem.Model
+        }
+        catch {
+            return $false
+        }
+    }
+
+    return (
+        $Manufacturer -eq 'Microsoft Corporation' -and
+        $Model -eq 'Virtual Machine'
+    )
+}
+
 function Get-VerifiedDownload {
     param([string]$Url, [string]$Sha256, [string]$Name)
     if (-not $Url.StartsWith('https://') -or $Sha256 -notmatch '^[a-f0-9]{64}$') {
@@ -98,12 +134,16 @@ function Invoke-Checked {
 try {
     $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
     $isAdministrator = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    $allowCiAdministrator = $IsGitHubCleanBootstrapCi
-    if ($isAdministrator -and -not $allowCiAdministrator) {
+    $isWindowsSandbox = Test-WindowsSandbox
+    $allowAdministrator = $IsGitHubCleanBootstrapCi -or $isWindowsSandbox
+    if ($isAdministrator -and -not $allowAdministrator) {
         throw "管理者として実行しないでください。通常権限のターミナルから bootstrap.cmd を実行してください。"
     }
-    if ($isAdministrator -and $allowCiAdministrator) {
+    if ($isAdministrator -and $IsGitHubCleanBootstrapCi) {
         Write-Host "GitHub Actionsのクリーンbootstrap試験として管理者ガードを通過します。"
+    }
+    elseif ($isAdministrator -and $isWindowsSandbox) {
+        Write-Host "Windows Sandboxの既定ユーザーとして管理者ガードを通過します。"
     }
 
     $arch = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()

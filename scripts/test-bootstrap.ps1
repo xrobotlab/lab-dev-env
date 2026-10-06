@@ -14,6 +14,24 @@ $ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.Fun
     ForEach-Object { . ([ScriptBlock]::Create($_.Extent.Text)) }
 
 function Assert-True { param([bool]$Condition, [string]$Message) if (-not $Condition) { throw $Message } }
+
+Assert-True (
+    Test-WindowsSandbox -Username 'WDAGUtilityAccount' -ContainersRegistryPresent $true `
+        -Manufacturer 'Microsoft Corporation' -Model 'Virtual Machine'
+) 'Windows Sandboxの実測マーカーを検出する必要があります。'
+Assert-True (-not (
+    Test-WindowsSandbox -Username 'miyut' -ContainersRegistryPresent $true `
+        -Manufacturer 'Microsoft Corporation' -Model 'Virtual Machine'
+)) '通常ユーザー名ではWindows Sandboxとして扱ってはいけません。'
+Assert-True (-not (
+    Test-WindowsSandbox -Username 'WDAGUtilityAccount' -ContainersRegistryPresent $false `
+        -Manufacturer 'Microsoft Corporation' -Model 'Virtual Machine'
+)) 'ContainersレジストリがなければWindows Sandboxとして扱ってはいけません。'
+Assert-True (-not (
+    Test-WindowsSandbox -Username 'WDAGUtilityAccount' -ContainersRegistryPresent $true `
+        -Manufacturer 'Microsoft Corporation' -Model 'Surface Laptop'
+)) '仮想マシン条件が一致しなければWindows Sandboxとして扱ってはいけません。'
+
 function Invoke-WebRequest {
     param($Uri, $OutFile, [switch]$UseBasicParsing)
     [IO.File]::WriteAllText($OutFile, 'verified payload')

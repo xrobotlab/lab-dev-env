@@ -46,6 +46,8 @@ GitHub Actionsの `Windowsクリーンbootstrap` ジョブでは、GitHub-hosted
 
 Windows 11 Pro / Enterprise / EducationでWindows Sandboxが利用できる場合は、ホスト環境を汚さずに最終確認できます。
 
+Windows Sandboxの既定ユーザーは `WDAGUtilityAccount` で管理者権限を持つため、通常Windows向けの「管理者として実行しない」ガードとは両立しません。bootstrapは `WDAGUtilityAccount`、Containersレジストリ、Microsoft製Virtual Machineという複合マーカーがすべて一致した場合に限りWindows Sandboxと判定し、管理者ガードを通過させます。通常Windowsでは従来どおり管理者実行を拒否します。
+
 受入試験ではSandbox内で次を順番に実施します。
 
 1. Gitがない状態でGitHubからZIPを取得する
