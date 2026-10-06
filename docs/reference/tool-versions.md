@@ -14,9 +14,11 @@
 | GitHub CLI (`gh`) | 2.102.0 | mise |
 | DYNAMIXEL SDK（Python） | 4.1.0 | `b3/` のuv環境 |
 | Git for Windows | 2.56.0.2 | Git未導入時のPortableGit |
-| GIMP | 3.2.6 | Windows GUIアプリ |
-| KiCad | 9.0.9 | Windows GUIアプリ |
+| GIMP | 3.2.6 | Windowsはbootstrap、Linux / macOSは手動導入 |
+| KiCad | 9.0系（基準9.0.9） | Windowsはbootstrap、Linux / macOSは手動導入 |
 | DYNAMIXEL Wizard 2 | 固定なし | 手動導入 |
+| Autodesk Fusion | 固定なし | Windows / macOSで手動導入 |
+| Bambu Studio | Public Release | Windows / macOS / Linuxで手動導入 |
 
 ## 更新時
 
