@@ -5,8 +5,11 @@
 ## 導入・運用
 
 - [Windowsセットアップ](setup/windows.md)
-- [Linux / macOSセットアップ](setup/linux-macos.md)
+- [Linuxセットアップ](setup/linux.md)
+- [macOSセットアップ](setup/macos.md)
 - [GUIアプリ](setup/gui-apps.md)
+- [Autodesk Fusion](setup/fusion.md)
+- [Bambu Studio](setup/bambu-studio.md)
 - [Docker](setup/docker.md)
 
 ## 参照情報
