@@ -19,6 +19,10 @@ b3-check:
 doctor:
     uv run --locked --project b3 python scripts/doctor.py
 
+# GUIを含めた貸与PCの準備を確認する（CIは通常のdoctorを使用）。
+doctor-full:
+    uv run --locked --project b3 python scripts/doctor.py --require-gui
+
 # miseで固定した各ツールのバージョンを表示する。
 versions:
     mise --version
@@ -28,3 +32,4 @@ versions:
     uv --version
     just --version
     pio --version
+    gh --version
