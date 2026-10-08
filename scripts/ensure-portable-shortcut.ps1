@@ -2,38 +2,91 @@ param([Parameter(Mandatory = $true)][string]$RequestBase64)
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 
+function Initialize-LabShortcutNative {
+    if ('LabDevEnv.ShortcutNative' -as [type]) { return }
+    # IShellLinkW uses Unicode explicitly, independently of the OS ANSI code page.
+    # https://learn.microsoft.com/windows/win32/api/shobjidl_core/nn-shobjidl_core-ishelllinkw
+    Add-Type -TypeDefinition @'
+using System;
+using System.IO;
+using System.Text;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+using Microsoft.Win32.SafeHandles;
+namespace LabDevEnv {
+    [ComImport, Guid("00021401-0000-0000-C000-000000000046")]
+    public class ShellLink {}
+    [ComImport, Guid("000214F9-0000-0000-C000-000000000046"),
+     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IShellLinkW {
+        void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder path, int size, IntPtr data, uint flags);
+        void GetIDList(out IntPtr list);
+        void SetIDList(IntPtr list);
+        void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder value, int size);
+        void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string value);
+        void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder value, int size);
+        void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string value);
+        void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder value, int size);
+        void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string value);
+        void GetHotkey(out short key);
+        void SetHotkey(short key);
+        void GetShowCmd(out int command);
+        void SetShowCmd(int command);
+        void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder value, int size, out int index);
+        void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string value, int index);
+        void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string value, uint reserved);
+        void Resolve(IntPtr window, uint flags);
+        void SetPath([MarshalAs(UnmanagedType.LPWStr)] string value);
+    }
+    public static class ShortcutNative {
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern uint GetFinalPathNameByHandleW(
+            SafeFileHandle file, StringBuilder path, uint size, uint flags);
+        public static string[] Read(string path) {
+            object instance = new ShellLink();
+            try {
+                ((IPersistFile)instance).Load(path, 0); // STGM_READ; never Resolve or Save an existing link.
+                IShellLinkW link = (IShellLinkW)instance;
+                StringBuilder target = new StringBuilder(32768), args = new StringBuilder(32768);
+                StringBuilder directory = new StringBuilder(32768), description = new StringBuilder(32768);
+                link.GetPath(target, target.Capacity, IntPtr.Zero, 4); // SLGP_RAWPATH
+                link.GetArguments(args, args.Capacity);
+                link.GetWorkingDirectory(directory, directory.Capacity);
+                link.GetDescription(description, description.Capacity);
+                return new string[] {target.ToString(), args.ToString(), directory.ToString(), description.ToString()};
+            }
+            finally { Marshal.FinalReleaseComObject(instance); }
+        }
+        public static void Write(string path, string target, string description) {
+            object instance = new ShellLink();
+            try {
+                IShellLinkW link = (IShellLinkW)instance;
+                link.SetPath(target);
+                link.SetArguments("");
+                link.SetWorkingDirectory(Path.GetDirectoryName(target));
+                link.SetIconLocation(target, 0);
+                link.SetDescription(description);
+                ((IPersistFile)instance).Save(path, true); // Caller owns this unique temporary path.
+            }
+            finally { Marshal.FinalReleaseComObject(instance); }
+        }
+    }
+}
+'@
+}
+
 function Read-LabShortcut {
     param([string]$Path)
-    $shell = $link = $null
-    try {
-        $shell = New-Object -ComObject WScript.Shell
-        $link = $shell.CreateShortcut($Path)
-        return [pscustomobject]@{ Target = $link.TargetPath; Arguments = $link.Arguments;
-            WorkingDirectory = $link.WorkingDirectory; Description = $link.Description }
-    }
-    finally {
-        if ($link) { [Runtime.InteropServices.Marshal]::FinalReleaseComObject($link) | Out-Null }
-        if ($shell) { [Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell) | Out-Null }
-    }
+    Initialize-LabShortcutNative
+    $data = [LabDevEnv.ShortcutNative]::Read($Path)
+    return [pscustomobject]@{ Target = $data[0]; Arguments = $data[1];
+        WorkingDirectory = $data[2]; Description = $data[3] }
 }
 
 function Write-LabShortcut {
     param([string]$Path, [string]$Target, [string]$Description)
-    $shell = $link = $null
-    try {
-        $shell = New-Object -ComObject WScript.Shell
-        $link = $shell.CreateShortcut($Path)
-        $link.TargetPath = $Target
-        $link.Arguments = ''
-        $link.WorkingDirectory = [IO.Path]::GetDirectoryName($Target)
-        $link.IconLocation = $Target + ',0'
-        $link.Description = $Description
-        $link.Save()
-    }
-    finally {
-        if ($link) { [Runtime.InteropServices.Marshal]::FinalReleaseComObject($link) | Out-Null }
-        if ($shell) { [Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell) | Out-Null }
-    }
+    Initialize-LabShortcutNative
+    [LabDevEnv.ShortcutNative]::Write($Path, $Target, $Description)
 }
 
 function Resolve-LabShortcutTarget {
@@ -43,21 +96,7 @@ function Resolve-LabShortcutTarget {
     if (-not (Test-Path -LiteralPath $current -PathType Leaf)) { return '' }
     # Resolve the opened file, including junctions in ancestor folders.
     # https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew
-    if (-not ('LabDevEnv.ShortcutNative' -as [type])) {
-        Add-Type -TypeDefinition @'
-using System;
-using System.Text;
-using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
-namespace LabDevEnv {
-    public static class ShortcutNative {
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern uint GetFinalPathNameByHandleW(
-            SafeFileHandle file, StringBuilder path, uint size, uint flags);
-    }
-}
-'@
-    }
+    Initialize-LabShortcutNative
     $stream = $null
     try {
         $share = [IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete

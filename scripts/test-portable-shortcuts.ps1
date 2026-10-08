@@ -79,7 +79,7 @@ try {
     Write-LabShortcut $existing $aliasTarget 'user-owned'
     $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $existing).Hash
     $link = Read-LabShortcut $existing
-    Write-Host ("junction fixture COM TargetPath: " + $link.Target)
+    Write-Host ("junction fixture Unicode COM TargetPath: " + $link.Target)
     Assert-True (Test-LabShortcutTarget $link (Resolve-LabShortcutTarget $junction.Target)) '祖先junctionも実行先へ正規化します。'
     $code = Ensure-LabPortableShortcut $junction.Programs $junction.Common $junction.Target 'Bambu Studio' 'Bambulab.Bambustudio'
     Assert-True ($code -eq 0 -and -not [IO.File]::Exists($junction.Destination)) 'junction経由vendorリンクも再利用して重複を防ぎます。'
