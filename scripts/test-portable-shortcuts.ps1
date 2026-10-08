@@ -28,7 +28,8 @@ function New-ShortcutFixture {
     [IO.Directory]::CreateDirectory($common) | Out-Null
     [IO.Directory]::CreateDirectory($bin) | Out-Null
     $target = Join-Path $bin 'bambu-studio.exe'
-    [IO.File]::WriteAllText($target, 'fixture only, never execute')
+    # Copy a real PE for Windows Shell validation; never execute this fixture.
+    [IO.File]::Copy((Join-Path ([Environment]::SystemDirectory) 'cmd.exe'), $target)
     return [pscustomobject]@{ Programs = $programs; Common = $common; Target = $target;
         Destination = Join-Path $programs 'lab-dev-env/Bambu Studio.lnk' }
 }
@@ -69,7 +70,7 @@ $junction = New-ShortcutFixture 'junction'
 $realDirectory = Join-Path $TemporaryRoot 'junction-real'
 [IO.Directory]::CreateDirectory($realDirectory) | Out-Null
 $junction.Target = Join-Path $realDirectory 'bambu-studio.exe'
-[IO.File]::WriteAllText($junction.Target, 'fixture only, never execute')
+[IO.File]::Copy((Join-Path ([Environment]::SystemDirectory) 'cmd.exe'), $junction.Target)
 $alias = Join-Path $TemporaryRoot 'junction alias 日本語'
 New-Item -ItemType Junction -Path $alias -Target (Split-Path -Parent $junction.Target) | Out-Null
 try {
@@ -117,7 +118,7 @@ Write-Host 'PASS: publish race preserves competing user file; temporary link cle
 
 $arduino = New-ShortcutFixture 'arduino'
 $arduinoTarget = Join-Path (Split-Path -Parent $arduino.Target) 'Arduino IDE.exe'
-[IO.File]::WriteAllText($arduinoTarget, 'fixture only, never execute')
+[IO.File]::Copy((Join-Path ([Environment]::SystemDirectory) 'cmd.exe'), $arduinoTarget)
 $code = Ensure-LabPortableShortcut $arduino.Programs $arduino.Common $arduinoTarget 'Arduino IDE 2' 'ArduinoSA.IDE.stable'
 $arduinoLink = Join-Path $arduino.Programs 'lab-dev-env/Arduino IDE 2.lnk'
 Assert-True ($code -eq 0 -and (Test-LabShortcutTarget (Read-LabShortcut $arduinoLink) $arduinoTarget)) 'Arduino IDE portableの空白入りexe名も保持します。'
