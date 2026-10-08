@@ -37,8 +37,9 @@ def windows_apps() -> list[dict[str, str]]:
                 for index in range(winreg.QueryInfoKey(key)[0]):
                     try:
                         with winreg.OpenKey(key, winreg.EnumKey(key, index)) as entry:
-                            app = {}
-                            for field in ("DisplayName", "DisplayVersion", "InstallLocation", "DisplayIcon"):
+                            app = {"_scope": "user" if hive == winreg.HKEY_CURRENT_USER else "machine"}
+                            for field in ("DisplayName", "DisplayVersion", "InstallLocation", "DisplayIcon",
+                                          "WinGetPackageIdentifier", "WinGetInstallerType", "WinGetSourceIdentifier"):
                                 try:
                                     app[field] = str(winreg.QueryValueEx(entry, field)[0])
                                 except OSError:
@@ -97,6 +98,8 @@ def detect(app: dict, system: str, installed: list[dict] | None = None) -> Detec
                 directory = Path(os.path.expandvars(location.strip('"')))
                 for command in app["commands"]:
                     candidates.extend((directory / command, directory / "bin" / command))
+        if portable := portable_shortcut_target(app, installed or []):
+            candidates.insert(0, portable)
     elif system == "Darwin":
         for root in (Path("/Applications"), Path.home() / "Applications"):
             for name in app["bundles"]:
@@ -112,6 +115,77 @@ def detect(app: dict, system: str, installed: list[dict] | None = None) -> Detec
     found = next((p for p in candidates if executable(p, system)), None)
     version = next((entry["DisplayVersion"] for entry in metadata if entry.get("DisplayVersion")), "")
     return Detection(found, bool(metadata), version)
+
+
+def portable_entries(app: dict, installed: list[dict]) -> list[dict]:
+    if app.get("installerType") != "portable":
+        return []
+    return [entry for entry in installed if entry.get("_scope") == "user"
+            and entry.get("WinGetPackageIdentifier") == app.get("winget")
+            and entry.get("WinGetInstallerType", "").lower() == "portable"
+            and entry.get("WinGetSourceIdentifier") == "Microsoft.Winget.Source_8wekyb3d8bbwe"]
+
+
+def portable_shortcut_target(app: dict, installed: list[dict]) -> Path | None:
+    targets = set()
+    # Resolve from winget's registration, not an arbitrary PATH command or DisplayIcon.
+    filename = next((name for name in app["commands"] if name.lower().endswith(".exe")), "")
+    if not filename:
+        return None
+    for entry in portable_entries(app, installed):
+        location = entry.get("InstallLocation", "")
+        if not location:
+            continue
+        root = Path(os.path.expandvars(location.strip('"')))
+        if not root.is_absolute() or not root.is_dir():
+            continue
+        root = root.resolve()
+        direct = root / filename
+        candidates = [direct] if direct.is_file() else list(root.rglob(filename))
+        for candidate in candidates:
+            resolved = candidate.resolve()
+            if executable(resolved, "Windows") and resolved.is_relative_to(root):
+                targets.add(resolved)
+    return next(iter(targets)) if len(targets) == 1 else None
+
+
+def create_portable_shortcut(app: dict, target: Path) -> int:
+    import base64
+
+    request = base64.b64encode(json.dumps(
+        {"target": str(target), "name": app["name"], "packageId": app["winget"]},
+        ensure_ascii=False).encode("utf-8")).decode("ascii")
+    source = base64.b64encode(str(ROOT / "scripts/ensure-portable-shortcut.ps1").encode("utf-8")).decode("ascii")
+    code = ("$ErrorActionPreference='Stop'; $p=[Text.Encoding]::UTF8.GetString("
+            "[Convert]::FromBase64String('" + source + "')); "
+            "$c=[IO.File]::ReadAllText($p,[Text.UTF8Encoding]::new($false)); "
+            "& ([ScriptBlock]::Create($c)) -RequestBase64 '" + request + "'")
+    encoded = base64.b64encode(code.encode("utf-16-le")).decode("ascii")
+    powershell = str(Path(os.environ["SystemRoot"]) / "System32/WindowsPowerShell/v1.0/powershell.exe")
+    result = captured([powershell, "-NoProfile", "-EncodedCommand", encoded])
+    if result.stdout:
+        print(result.stdout.strip())
+    if result.stderr:
+        print(result.stderr.strip())
+    return result.returncode if result.returncode in (0, 2) else 1
+
+
+def ensure_portable_shortcut(app: dict, system: str, installed: list[dict]) -> int:
+    if system != "Windows" or not portable_entries(app, installed):
+        return 0
+    target = portable_shortcut_target(app, installed)
+    if target is None:
+        print(f"[手動] {app['name']}のportable実行ファイルを一意に確認できず、ショートカットは変更していません。")
+        return 2
+    return create_portable_shortcut(app, target)
+
+
+def shortcut_result(app: dict, system: str, installed: list[dict]) -> int:
+    try:
+        return ensure_portable_shortcut(app, system, installed)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        print(f"[失敗] {app['name']}のショートカット: {exc}")
+        return 1
 
 
 def report() -> int:
@@ -231,6 +305,9 @@ def provision() -> int:
         result = detect(app, system, installed)
         if result.path:
             print(f"[保持] {app['name']}: 導入済み。更新しません。")
+            shortcut = shortcut_result(app, system, installed)
+            failures += int(shortcut == 1)
+            pending += int(shortcut == 2)
             continue
         if result.registered:
             manual(app, "既存の登録を確認してください。自動再導入は行いません。")
@@ -267,13 +344,17 @@ def provision() -> int:
             print("完了画面ではアプリの起動を選ばずに閉じてください。起動した場合はそのアプリも閉じてください。", flush=True)
             process = run_install(command, system, env)
             # Windows registration can change while the installer is running.
-            after = detect(app, system, windows_apps() if system == "Windows" else [])
+            installed_after = windows_apps() if system == "Windows" else []
+            after = detect(app, system, installed_after)
             if process.returncode or not after.path:
                 print(f"[失敗] {app['name']}: 終了コード {process.returncode}。導入後の検出: {bool(after.path)}")
                 manual(app, "キャンセル・通信・導入先を確認して再実行してください。")
                 failures += 1
             else:
                 print(f"[検出] {app['name']}: 導入を確認しました。")
+                shortcut = shortcut_result(app, system, installed_after)
+                failures += int(shortcut == 1)
+                pending += int(shortcut == 2)
         except (OSError, subprocess.TimeoutExpired, ValueError, KeyError, RuntimeError) as exc:
             manual(app, str(exc))
             failures += 1

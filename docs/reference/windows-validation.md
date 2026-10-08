@@ -26,7 +26,7 @@ GitHub Actionsの `Windowsクリーンbootstrap` ジョブでは、GitHub-hosted
 
 ## 通常のWindows CI
 
-通常のWindowsジョブでは、PowerShell構文、ダウンロード・ハッシュ検証関数、固定版ツール、B3環境、doctorの単体テストも別に確認します。
+通常のWindowsジョブでは、PowerShell構文、ダウンロード・ハッシュ検証関数、固定版ツール、B3環境、doctorの単体テストも別に確認します。ユーザーStart Menuを選択する入口は呼び出さず、一時フォルダー内だけに実際の.lnkを作成し、Unicode・空白入りexe、作業フォルダー、既存user/vendorリンク保持、同名衝突、公開時の競合、再実行・不足リンク補完を検証します。
 
 ## 自動検証に含めないもの
 
@@ -56,6 +56,7 @@ Windows 11 Pro / Enterprise / EducationでWindows Sandboxが利用できる場�
 5. ターミナルを開き直す
 6. `just doctor-full` を実行する
 7. `bootstrap.cmd` を再実行して冪等性を確認する
+8. portable版Bambu Studio / Arduino IDE 2のスタートメニューリンクから起動し、リンクを削除して再実行すると不足分だけ補完されることを確認する
 
 Sandbox終了時に内部状態が破棄されるため、ホストPCの既存開発環境とは分離して試験できます。
 

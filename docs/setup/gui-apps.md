@@ -17,6 +17,12 @@ macOSは既存のHomebrewに昇格禁止・既存版の更新禁止・自動更�
 
 公式配布元は [README](../../README.md#標準guiの公式配布元) と [導入根拠](../reference/installer-evidence.md) を参照してください。
 
+## Windows portable版のショートカット
+
+wingetにユーザー単位のportableとして登録されたBambu Studio・Arduino IDE 2が対象です。登録された導入先から本体exeを解決し、ユーザー用スタートメニューの `lab-dev-env` に `Bambu Studio.lnk` / `Arduino IDE 2.lnk` を作ります。作業フォルダーは実行ファイルの親フォルダーです。デスクトップとシステム全体の配置は変更しません。
+
+新規導入後と `bootstrap.cmd` / `just gui-setup` の再実行で、不足したリンクを補います。アプリを再インストール・更新しません。同じ本体を開く既存のユーザー用／共通スタートメニューリンクがあれば再利用します。既存ファイルを上書きせず、同名ファイルとの衝突は手動確認（終了コード2）として表示します。インストーラー版や別の配布元のアプリに追加リンクを作りません。`just doctor-full` は読み取り専用のままです。
+
 ## 検出と完了確認
 
 `just doctor-full` は6本の実行ファイルを読み取り専用で検出します。登録だけ存在して実行ファイルが見つからない場合は自動再導入せず、既存の導入先・修復を確認します。検出はGUI起動・実機通信の成功を保証しません。macOSは `/Applications` と `~/Applications` のapp bundle、Windowsは登録情報・標準位置・PATH、LinuxはPATHを調べます。

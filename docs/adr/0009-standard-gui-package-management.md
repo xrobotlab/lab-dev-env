@@ -13,6 +13,8 @@ Windowsはwingetの正確なID、source、user scope、installer typeを指定�
 
 macOSは準備済みHomebrewの制御機能を確認し、対応するcaskをユーザーのApplicationsへ導入します。pkg・導入スクリプト・共有領域artifactを含む定義は自動実行しません。Homebrew自体は初期導入しません。KiCadとWizardは公式手動手順へ誘導します。Linuxも公式手動手順を使用します。
 
+Windowsのユーザーportable版Bambu Studio・Arduino IDE 2には、ユーザー用スタートメニューの不足したショートカットを新規導入後と再実行時に補完します。実行先と作業フォルダーを確認し、既存リンク・同名ファイルを保持します。デスクトップへ追加しません。
+
 通常権限の境界、Windowsの自動配置と結果画面を維持します。未対応項目も標準対象に残し、手動確認が残る状態は完了にしません。doctor-fullは6本を検出します。GUI起動・ドライバ・実機通信は別途確認します。
 
 ## 検証と制約
