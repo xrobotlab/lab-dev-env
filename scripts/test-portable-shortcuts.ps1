@@ -1,5 +1,10 @@
 param([Parameter(Mandatory = $true)][string]$TemporaryRoot)
 $ErrorActionPreference = 'Stop'
+trap {
+    Write-Host $_.Exception.ToString()
+    Write-Host $_.ScriptStackTrace
+    throw
+}
 if (-not [IO.Path]::IsPathRooted($TemporaryRoot) -or -not (Test-Path -LiteralPath $TemporaryRoot)) {
     throw '既存の絶対パスの一時ルートを指定してください。'
 }
@@ -29,6 +34,9 @@ function New-ShortcutFixture {
 }
 
 $fixture = New-ShortcutFixture 'create'
+Write-Host ("fixture target: " + $fixture.Target)
+Write-Host ("fixture resolved target: " + (Resolve-LabShortcutTarget $fixture.Target))
+Write-Host ("fixture destination: " + $fixture.Destination)
 $code = Ensure-LabPortableShortcut $fixture.Programs $fixture.Common $fixture.Target 'Bambu Studio' 'Bambulab.Bambustudio'
 Assert-True ($code -eq 0 -and [IO.File]::Exists($fixture.Destination)) 'ユーザー用fixtureだけに作成します。'
 $link = Read-LabShortcut $fixture.Destination
