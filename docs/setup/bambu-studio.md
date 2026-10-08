@@ -27,6 +27,6 @@ Linuxは公式GitHub ReleasesのAppImage、またはBambu Studio公式リポジ�
 - G-codeの確認
 - 対応環境でのプリンタ操作・監視
 
-## lab-dev-envで自動導入しない理由
+## lab-dev-envの標準GUI
 
-3Dプリンタを使用しない研究では不要であり、Bambu Studioは更新頻度も高いため、bootstrapで固定せず公式のPublic Releaseを手動導入します。
+Bambu Studioは標準GUIです。版は固定せず、既存版は保持します。Windowsはwinget portable、macOSは対応する既存Homebrewから不足分を導入します。Linux・未対応環境の公式手動手順と検出は [GUIアプリ](gui-apps.md) を参照してください。

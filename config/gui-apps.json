@@ -1,0 +1,133 @@
+{
+  "standard": [
+    {
+      "id": "gimp",
+      "name": "GIMP",
+      "pattern": "GIMP*",
+      "commands": [
+        "gimp",
+        "gimp-3",
+        "gimp-3.exe"
+      ],
+      "windowsPaths": [
+        "%LOCALAPPDATA%/Programs/GIMP*/bin/gimp*.exe",
+        "%ProgramFiles%/GIMP*/bin/gimp*.exe"
+      ],
+      "winget": "GIMP.GIMP.3",
+      "installerType": "inno",
+      "cask": "gimp",
+      "bundles": [
+        "GIMP.app"
+      ],
+      "url": "https://www.gimp.org/downloads/"
+    },
+    {
+      "id": "kicad",
+      "name": "KiCad",
+      "pattern": "KiCad*",
+      "commands": [
+        "kicad",
+        "kicad.exe"
+      ],
+      "windowsPaths": [
+        "%LOCALAPPDATA%/Programs/KiCad/*/bin/kicad.exe",
+        "%ProgramFiles%/KiCad/*/bin/kicad.exe"
+      ],
+      "winget": "KiCad.KiCad",
+      "installerType": "nullsoft",
+      "bundles": [
+        "KiCad/KiCad.app",
+        "KiCad.app"
+      ],
+      "url": "https://www.kicad.org/download/"
+    },
+    {
+      "id": "vscode",
+      "name": "VS Code",
+      "pattern": "Microsoft Visual Studio Code*",
+      "commands": [
+        "code",
+        "Code.exe"
+      ],
+      "windowsPaths": [
+        "%LOCALAPPDATA%/Programs/Microsoft VS Code/Code.exe",
+        "%ProgramFiles%/Microsoft VS Code/Code.exe"
+      ],
+      "winget": "Microsoft.VisualStudioCode",
+      "installerType": "inno",
+      "cask": "visual-studio-code",
+      "bundles": [
+        "Visual Studio Code.app"
+      ],
+      "url": "https://code.visualstudio.com/Download"
+    },
+    {
+      "id": "arduino",
+      "name": "Arduino IDE 2",
+      "pattern": "Arduino IDE*",
+      "commands": [
+        "arduino-ide",
+        "Arduino IDE.exe"
+      ],
+      "windowsPaths": [
+        "%LOCALAPPDATA%/Programs/Arduino IDE/Arduino IDE.exe",
+        "%LOCALAPPDATA%/Programs/arduino-ide/Arduino IDE.exe",
+        "%ProgramFiles%/Arduino IDE/Arduino IDE.exe",
+        "%ProgramFiles%/arduino-ide/Arduino IDE.exe",
+        "%LOCALAPPDATA%/Microsoft/WinGet/Packages/ArduinoSA.IDE.stable_*/*Arduino IDE.exe"
+      ],
+      "cask": "arduino-ide",
+      "bundles": [
+        "Arduino IDE.app"
+      ],
+      "url": "https://www.arduino.cc/en/software/",
+      "winget": "ArduinoSA.IDE.stable",
+      "installerType": "portable"
+    },
+    {
+      "id": "bambu",
+      "name": "Bambu Studio",
+      "pattern": "Bambu Studio*",
+      "commands": [
+        "bambu-studio",
+        "bambu-studio.exe"
+      ],
+      "windowsPaths": [
+        "%ProgramFiles%/Bambu Studio/bambu-studio.exe",
+        "%LOCALAPPDATA%/Microsoft/WinGet/Packages/Bambulab.Bambustudio_*/*bambu-studio.exe"
+      ],
+      "cask": "bambu-studio",
+      "bundles": [
+        "BambuStudio.app"
+      ],
+      "url": "https://bambulab.com/en/download/studio",
+      "winget": "Bambulab.Bambustudio",
+      "installerType": "portable"
+    },
+    {
+      "id": "dynamixelWizard",
+      "name": "DYNAMIXEL Wizard 2",
+      "pattern": "DYNAMIXEL Wizard*",
+      "commands": [
+        "DynamixelWizard2",
+        "DynamixelWizard2.exe"
+      ],
+      "windowsPaths": [
+        "%LOCALAPPDATA%/Programs/DYNAMIXEL Wizard 2.0/DynamixelWizard2.exe",
+        "%ProgramFiles%/ROBOTIS/DYNAMIXEL Wizard 2.0/DynamixelWizard2.exe"
+      ],
+      "bundles": [
+        "DynamixelWizard2.app",
+        "DYNAMIXEL Wizard 2.app",
+        "DYNAMIXEL2Wizard/DynamixelWizard2.app",
+        "DYNAMIXEL Wizard 2.0/DynamixelWizard2.app"
+      ],
+      "pathEnv": "DYNAMIXEL_WIZARD_PATH",
+      "url": "https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/"
+    }
+  ],
+  "optional": [
+    "Docker",
+    "Autodesk Fusion"
+  ]
+}

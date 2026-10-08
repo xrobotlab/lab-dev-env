@@ -1,39 +1,35 @@
-# GUIアプリ
+# 標準GUIアプリ
 
-研究室で共通利用するGUIアプリの位置づけと導入先をまとめます。
+標準対象はGIMP、KiCad、VS Code、Arduino IDE 2、Bambu Studio、DYNAMIXEL Wizard 2の6本です。任意対象はDockerとAutodesk Fusionだけです。対象と検出・導入の設定は [共通一覧](../../config/gui-apps.json) を正本とします。GUIの版は固定せず、既存アプリを保持します。
 
-実際の初期セットアップでは、各OSの手順に沿ってCLI環境の構築後に必要なGUIアプリを導入してください。
-
-- [Windowsセットアップ](windows.md)
-- [Linuxセットアップ](linux.md)
-- [macOSセットアップ](macos.md)
-
-## 対象アプリ
-
-| アプリ | 用途 | Windows | Linux / macOS |
+| 対象 | Windows 11 x64 | macOS | Linux |
 | --- | --- | --- | --- |
-| GIMP 3.2.6 | B4論文用の画像作成 | bootstrap中に対話導入 | 手動導入 |
-| KiCad 9.0系 | 回路図・PCB設計、製造データ作成 | bootstrap中に9.0.9を対話導入 | 手動導入 |
-| DYNAMIXEL Wizard 2 | B3ゼミ・DYNAMIXEL設定 | 手動導入 | 手動導入 |
-| Autodesk Fusion | 3D CAD | 必要な場合に手動導入 | macOSは手動導入、Linuxはネイティブ非対応 |
-| Bambu Studio | Bambu Lab製3Dプリンタ用スライサー | 必要な場合に手動導入 | 必要な場合に手動導入 |
+| GIMP / VS Code | wingetのuser-scope Inno対話導入 | 既存Homebrewからユーザー領域へ | 公式手動導入 |
+| KiCad | wingetのuser-scope NSIS対話導入 | 公式手動導入 | 公式手動導入 |
+| Arduino IDE 2 / Bambu Studio | wingetのuser-scope portableに限定 | 既存Homebrewからユーザー領域へ | 公式手動導入 |
+| DYNAMIXEL Wizard 2 | 公式手動導入 | 公式手動導入 | 公式手動導入 |
 
-固定URL、SHA-256、インストーラー引数の確認根拠は [インストーラー・配布物の確認根拠](../reference/installer-evidence.md) に記録しています。
+不足分の導入はbootstrapが呼び出します。CLI導入後に再試行する場合はリポジトリのルートで `just gui-setup` を実行します。終了コード0は全6本検出、2は未対応経路などの公式手動確認が残る状態、1は導入失敗です。wingetの適用不可・取得失敗も1となり、公式手順を併記します。キャンセル・取得エラー・終了コード0でも実行ファイル未検出の場合は成功にしません。
 
-## DYNAMIXEL Wizard 2
+Windowsは正確なpackage ID・winget source・user scope・installer typeを指定し、machineや別形式へ切り替えません。パッケージが適用できないときは上の公式手順を案内します。アプリが管理者権限を要求したらキャンセルし、研究室の管理者へ相談してください。
 
-公式マニュアル:
+macOSは既存のHomebrewに昇格禁止・既存版の更新禁止・自動更新禁止・cleanup禁止を設定します。`brew config` でこれらを認識することを確認し、caskの現在の定義にpkg・導入スクリプト・共有領域artifact等がない場合だけ `~/Applications` へ導入します。`--no-binaries` を付け、追加CLIリンクを作りません。Homebrew自体の初期導入は管理者作業が必要になるため、未準備の場合は公式配布元を使います。KiCadのcaskは共有領域artifactを含むため自動導入しません。Gatekeeperやquarantineは変更しません。
 
-- [ROBOTIS DYNAMIXEL Wizard 2 e-Manual](https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/)
+公式配布元は [README](../../README.md#標準guiの公式配布元) と [導入根拠](../reference/installer-evidence.md) を参照してください。
 
-Windows 10 / 11 64 bit、Ubuntu 22.04 / 24.04 64 bit、macOS 13以降が公式案内の対象です。
+## 検出と完了確認
 
-現時点では版付き配布URL、SHA-256、無人導入用CLI引数を確認できていないため、bootstrapから自動導入しません。
+`just doctor-full` は6本の実行ファイルを読み取り専用で検出します。登録だけ存在して実行ファイルが見つからない場合は自動再導入せず、既存の導入先・修復を確認します。検出はGUI起動・実機通信の成功を保証しません。macOSは `/Applications` と `~/Applications` のapp bundle、Windowsは登録情報・標準位置・PATH、LinuxはPATHを調べます。
 
-導入後は次で検出を確認します。
+AppImageや独自の場所への導入が未検出なら、現在のターミナルで次の変数に実行ファイルの絶対パスを指定できます。システム環境変数を変更する必要はありません。
 
-```sh
-just doctor-full
-```
+| 対象 | 変数 |
+| --- | --- |
+| GIMP | `LAB_GUI_GIMP_PATH` |
+| KiCad | `LAB_GUI_KICAD_PATH` |
+| VS Code | `LAB_GUI_VSCODE_PATH` |
+| Arduino IDE 2 | `LAB_GUI_ARDUINO_PATH` |
+| Bambu Studio | `LAB_GUI_BAMBU_PATH` |
+| DYNAMIXEL Wizard 2 | `DYNAMIXEL_WIZARD_PATH` |
 
-標準位置以外へ導入して未検出になる場合は、`DYNAMIXEL_WIZARD_PATH` に実行ファイルの絶対パスを設定します。
+更新はbootstrapと分離し、利用者が各アプリ・パッケージ管理ツールの更新手順を選んで実行します。bootstrapはupgrade・uninstall・強制再導入を実行しません。

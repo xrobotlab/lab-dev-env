@@ -1,4 +1,4 @@
-# ZIP bootstrap copy allowlist; update when tracked distribution files change.
+# Windows ZIP配布でコピーするGit追跡ファイル。追跡一覧と同期してください。
 .gitattributes
 .github/workflows/validate.yml
 .gitignore
@@ -11,6 +11,7 @@ b3/pyproject.toml
 b3/uv.lock
 bootstrap.cmd
 bootstrap.sh
+config/gui-apps.json
 config/windows-apps.json
 config/windows-source-files.txt
 docs/README.md
@@ -22,6 +23,7 @@ docs/adr/0005-docker-outside-default-bootstrap.md
 docs/adr/0006-standardize-kicad.md
 docs/adr/0007-standardize-fusion.md
 docs/adr/0008-standardize-bambu-studio.md
+docs/adr/0009-standard-gui-package-management.md
 docs/adr/README.md
 docs/reference/installer-evidence.md
 docs/reference/tool-versions.md
@@ -40,9 +42,11 @@ scripts/bootstrap-console.ps1
 scripts/bootstrap-entry.ps1
 scripts/bootstrap.ps1
 scripts/doctor.py
+scripts/gui_tools.py
 scripts/test-bootstrap-entry.ps1
 scripts/test-bootstrap.ps1
 scripts/test-clean-bootstrap.ps1
 scripts/test_docs.py
 scripts/test_doctor.py
+scripts/test_gui_tools.py
 scripts/test_justfile.py

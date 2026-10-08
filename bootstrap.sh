@@ -111,5 +111,18 @@ configure_shell() {
 
 configure_shell
 
+gui_status=0
+if [ "${GITHUB_ACTIONS:-}" = true ] && [ "${RUNNER_ENVIRONMENT:-}" = github-hosted ] && [ "${LAB_DEV_ENV_CLEAN_BOOTSTRAP_CI:-}" = 1 ]; then
+    echo "GitHub Actionsのクリーンbootstrap試験ではGUI導入を省略します。"
+else
+    "$MISE_BIN" exec -- python scripts/gui_tools.py --install-missing || gui_status=$?
+fi
 echo
-echo "セットアップが完了しました。シェルを再起動してから just doctor を実行してください。"
+if [ "$gui_status" -eq 0 ]; then
+    echo "セットアップが完了しました。シェルを再起動してから just doctor-full を実行してください。"
+elif [ "$gui_status" -eq 2 ]; then
+    echo "CLIセットアップ完了。標準GUIの手動確認が必要です。上の公式手順と just doctor-full を確認してください。"
+else
+    echo "標準GUIの導入に失敗しました。上の表示を確認してください。" >&2
+fi
+exit "$gui_status"

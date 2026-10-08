@@ -43,7 +43,10 @@ $c = [IO.File]::ReadAllText($p, [Text.UTF8Encoding]::new($false))
         $mutex.Dispose()
     }
     if ($code -eq 0) {
-        Write-Host '完了。この画面を閉じて構いません。READMEの手動導入と完了確認へ進んでください。' -ForegroundColor Green
+        Write-Host '完了。この画面を閉じて構いません。READMEの完了確認へ進んでください。' -ForegroundColor Green
+    }
+    elseif ($code -eq 2) {
+        Write-Host 'セットアップは未完了です（標準GUIの手動確認が必要）。READMEの公式導入手順へ進んでください。' -ForegroundColor Yellow
     }
     else {
         Write-Host "セットアップは未完了です（終了コード: $code）。このエラー表示を控えてください。" -ForegroundColor Red

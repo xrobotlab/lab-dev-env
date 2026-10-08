@@ -23,6 +23,10 @@ doctor:
 doctor-full:
     uv run --locked --project b3 python scripts/doctor.py --require-gui
 
+# 標準GUIの不足分だけを導入する（既存アプリの更新は行わない）。
+gui-setup:
+    python scripts/gui_tools.py --install-missing
+
 # 標準CLIとB3環境のDYNAMIXEL SDKのバージョンを表示する。
 versions:
     git --version
