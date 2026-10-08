@@ -34,15 +34,17 @@ jobs:
           $content = [IO.File]::ReadAllText((Resolve-Path 'scripts/bootstrap.ps1'), [Text.UTF8Encoding]::new($false))
           [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$tokens, [ref]$errors) | Out-Null
           if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
-      - name: Windowsのダウンロード検証と終了コードを確認
+      - name: Windowsのダウンロード・自動配置・待機と終了コードを確認
         if: runner.os == 'Windows'
         shell: powershell
         run: |
           $temporaryRoot = Join-Path $env:RUNNER_TEMP ('lab-dev-env-tests-' + [guid]::NewGuid().ToString('N'))
           New-Item -ItemType Directory -Path $temporaryRoot | Out-Null
           try {
-            $content = [IO.File]::ReadAllText((Resolve-Path 'scripts/test-bootstrap.ps1'), [Text.UTF8Encoding]::new($false))
-            & ([ScriptBlock]::Create($content)) -TemporaryRoot $temporaryRoot
+            foreach ($test in @('scripts/test-bootstrap.ps1', 'scripts/test-bootstrap-entry.ps1')) {
+              $content = [IO.File]::ReadAllText((Resolve-Path $test), [Text.UTF8Encoding]::new($false))
+              & ([ScriptBlock]::Create($content)) -TemporaryRoot $temporaryRoot
+            }
           }
           finally { Remove-Item -LiteralPath $temporaryRoot -Recurse -Force }
       - uses: jdx/mise-action@v5

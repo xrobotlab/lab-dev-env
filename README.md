@@ -2,7 +2,7 @@
 
 XRobotLabの研究室PC向け標準開発環境です。B3は次の順に進めてください。
 
-1. 下の表で導入するものを確認し、推奨場所にリポジトリを置く。
+1. 下の表で導入するものを確認する。
 2. 自分のOSの手順だけを実施する: [Windows 11](#windows-11) / [macOS](#macos) / [Linux](#linux)。
 3. 必要なIDEを手動導入し、共通の完了確認を行う。
 
@@ -21,12 +21,14 @@ XRobotLabの研究室PC向け標準開発環境です。B3は次の順に進め�
 
 ## 導入先とコマンドの実行場所
 
-このリポジトリはセットアップ後も環境の確認・再同期に使います。一時フォルダーやダウンロードフォルダー、OneDriveなどの同期対象を避け、次の場所に置いて残してください。管理者権限が必要な場所には置きません。
+このリポジトリはセットアップ後も環境の確認・再同期に使います。WindowsのZIP版はbootstrapが次の場所へ自動コピーするため、自分でフォルダーを作成・移動する必要はありません。展開元は残ります。macOS / Linuxは下のOS別手順で取得します。
 
-| OS | 推奨場所 |
+| OS | セットアップに使う場所 |
 | --- | --- |
-| Windows | `%USERPROFILE%\source\lab-dev-env` |
+| Windows（ZIP版） | `%USERPROFILE%\source\lab-dev-env`（自動配置） |
 | macOS / Linux | `~/source/lab-dev-env` |
+
+セットアップ後はこの場所を残してください。Gitで取得したWindowsの作業コピーは、履歴を保つため取得した場所をそのまま使います。
 
 下のコード枠は、1行ずつコピーしてPowerShellまたはターミナルへ貼り付け、Enterキーを押して実行します。`$HOME` は自分のユーザーフォルダーを表すので、ユーザー名への書き換えは不要です。
 
@@ -34,29 +36,21 @@ XRobotLabの研究室PC向け標準開発環境です。B3は次の順に進め�
 
 ## Windows 11
 
-### 1. ZIPを取得し、決めた場所に置く
+### 1. ZIPを取得し、展開する
 
-GitがないPCでも、この手順で開始できます。
+GitがないPCでも、この手順で開始できます。GitHubの **Code → Download ZIP** をクリックし、ダウンロードしたZIPを右クリックして **すべて展開** を選びます。
 
-1. GitHubの **Code → Download ZIP** をクリックし、ダウンロードしたZIPを右クリックして **すべて展開** を選びます。
-2. **Windowsキー + E** でエクスプローラーを開き、アドレスバーへ `%USERPROFILE%` と入力してEnterキーを押します。
-3. 空いている部分を右クリックし、**新規作成 → フォルダー** で `source` フォルダーを作ります。すでにあればそのフォルダーを使います。
-4. 展開した中から、**`bootstrap.cmd` と `README.md` が直接入っているフォルダー**（拡張子が非表示なら `bootstrap` と `README`）を見つけ、`source` の中へコピーします。名前が `lab-dev-env-main` なら `lab-dev-env` に変更します。
+### 2. bootstrap.cmdをダブルクリックする
 
-展開した外側のフォルダーの中に、さらに `lab-dev-env-main` がある場合は、`bootstrap.cmd` が入っている内側を使ってください。最終的に `%USERPROFILE%\source\lab-dev-env\bootstrap.cmd` がある状態にします。
+展開した中の **`bootstrap.cmd`**（拡張子が非表示なら `bootstrap`）を通常のダブルクリックで開きます。ZIPの中から直接開かず、**すべて展開した後**に実行してください。**管理者として実行しないでください。**
 
-### 2. PowerShellでセットアップする
+必要なファイルが `%USERPROFILE%\source\lab-dev-env` へ自動コピーされ、その場所でPowerShellのセットアップ画面が開きます。手動での配置やコマンド入力は不要です。
 
-スタートメニューを開き、`PowerShell` と検索して **Windows PowerShell** を開きます。**管理者として実行しないでください。** 次を1行ずつ入力します。
+GIMPとKiCadが未導入の場合は、別ウィンドウに対話インストーラーが開きます。**インストールが終わるまでセットアップ画面を閉じないでください。** 画面に従ってユーザー単位で導入します。完了画面ではアプリの起動を選ばずに閉じます。起動した場合は、そのアプリも閉じるとセットアップが続きます。
 
-```powershell
-cd "$HOME\source\lab-dev-env"
-.\bootstrap.cmd
-```
+**`完了。この画面を閉じて構いません。`** と出たら、Enterキーで閉じて次へ進みます。エラー時は完了とは表示されません。表示を控え、原因を解消してから配置先の `bootstrap.cmd` を開いて再実行してください。
 
-1行目は手順1で置いたフォルダーへ移動します。2行目はセットアップを開始します。GIMPとKiCadが未導入の場合は対話インストーラーが開くので、画面に従って導入してください。
-
-`CLIと対話式GUIセットアップが完了しました。` で始まる表示が出たら、次の手順へ進みます。`cd` で「パスが見つからない」と出た場合は、手順1の配置場所を確認してください。`bootstrap.cmd` が見つからない場合は、そのファイルが直接入っているフォルダーを配置できているか確認します。
+「配置先は既に存在します」と出た場合は上書きされていません。既存フォルダー内の `bootstrap.cmd` を使ってください。既存フォルダーが何のものか分からない場合は削除せず、研究室の担当者へ相談してください。
 
 ### 3. DYNAMIXEL Wizard 2を導入する
 
@@ -67,6 +61,9 @@ DYNAMIXEL Wizard 2は自動導入されません。[ROBOTIS公式マニュアル
 必要な場合は [IDEの手動導入](#ideの手動導入) を済ませ、[導入後の完了確認](#導入後の完了確認) へ進んでください。
 
 ## Linux
+
+<details>
+<summary>Linux利用者のみ: セットアップ手順を開く</summary>
 
 ### 1. ターミナルを開き、Gitを確認する
 
@@ -110,7 +107,12 @@ DYNAMIXELやUSBシリアル機器を使用する場合、`dialout` などのOS�
 
 必要な場合は [IDEの手動導入](#ideの手動導入) を済ませ、[導入後の完了確認](#導入後の完了確認) へ進んでください。
 
+</details>
+
 ## macOS
+
+<details>
+<summary>macOS利用者のみ: セットアップ手順を開く</summary>
 
 ### 1. ターミナルを開き、Gitを確認する
 
@@ -152,6 +154,8 @@ cd lab-dev-env
 
 必要な場合は [IDEの手動導入](#ideの手動導入) を済ませ、[導入後の完了確認](#導入後の完了確認) へ進んでください。
 
+</details>
+
 ## IDEの手動導入
 
 VS CodeとArduino IDE 2はbootstrapで自動導入されません。必要に応じて公式配布元から利用するOSの版を手動導入してください。
@@ -163,7 +167,9 @@ IDEの使い方や拡張機能の設定はB3ゼミで扱います。
 
 ## 導入後の完了確認
 
-OS別の手順と必要なIDEの導入を済ませたら、開いているPowerShell／ターミナルを閉じ、同じ方法で新しく開いてください。新しい画面に次を1行ずつ入力します。
+OS別の手順と必要なIDEの導入を済ませたら、新しいPowerShell／ターミナルを開いてください。Windowsではスタートメニューで `PowerShell` を検索し、**Windows PowerShell** を通常権限で開きます。macOS / Linuxは上のOS別手順と同じ方法でターミナルを開きます。次を1行ずつ入力します。
+
+WindowsのGit作業コピーを使った場合は、下の1行目を実際に取得したフォルダーのパスへ置き換えます。
 
 **Windows PowerShell:**
 
@@ -202,6 +208,8 @@ uv run --locked --project b3 python path/to/script.py
 
 `path/to/script.py` は実行したいPythonファイルの場所に置き換えます。例えば教材の `sample.py` を `b3` フォルダーへ置いた場合は `b3/sample.py` と指定します。`ModuleNotFoundError: No module named 'dynamixel_sdk'` が出る場合は、別のPython環境で実行していないか確認し、上記の `uv run` を使ってください。SDKが読み込めることとバージョンの確認は、実機通信の確認とは別です。
 
+エディターから実行する場合も、Windowsでは `b3\.venv\Scripts\python.exe`、macOS / Linuxでは `b3/.venv/bin/python` をPython環境として選択します。
+
 <details>
 <summary>B4以上・研究用プロジェクトで使う場合（B3は読み飛ばしてOK）</summary>
 
@@ -239,6 +247,12 @@ cd lab-dev-env
 
 ```sh
 just versions
+```
+
+SDKが見つからない場合に、B3環境のPythonの場所とSDKの版を確認するコマンドです。エディターのPython環境がこの実行先と一致するか確認してください。
+
+```sh
+uv run --locked --project b3 python -c "import sys; from importlib.metadata import version; print(sys.executable); print(version('dynamixel-sdk'))"
 ```
 
 導入済み環境を再同期する場合は次を実行します。

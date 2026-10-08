@@ -22,6 +22,14 @@
 - [公式プロジェクトの保守担当者の回答](https://gitlab.com/kicad/packaging/kicad-win-builder/-/work_items/135)は `/S` に `/allusers` または `/currentuser` の併用が必要としています。今回の実装は `/S` を外し、ユーザー単位を指定する `/currentuser` のみ使って対話導入します。ただしソース・回答の確認は、固定した9.0.9実ファイルの実行試験を代替しません。
 - 同パッケージソースには、条件に応じてVisual C++ Runtimeを導入する処理もあります。アプリ本体のユーザー単位導入とは別に、前提コンポーネントの管理者作業が必要な場合があります。権限要求は自動承認しません。
 
+## 対話インストーラーの待機
+
+確認日: 2026-10-08。[PowerShell 5.1のStart-Process公式仕様](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/start-process?view=powershell-5.1)では、`-Wait` は起動したプロセスと子孫プロセスの終了まで待ちます。bootstrapはこの待機を維持し、待機するアプリ名と、ターミナルを閉じずに対話画面を操作する案内を起動前に表示します。終了コードが0で、期待版の登録と実行ファイルを確認できた場合にだけ次へ進みます。
+
+上記のGIMP公式ソースの `[Run]` は、完了後のアプリ起動に `unchecked postinstall nowait` を指定しています。アプリを起動するとその終了も待つため、完了画面では起動を選ばない案内を出します。KiCadの上記パッケージソースも、Visual C++ Runtimeの前提導入に `ExecWait` を使用しています。
+
+子を起動した親が先に終了するケースは、イベントで子の終了を制御する無害なfixtureで待機を確認します。実物のGIMP／KiCadをこの試験で導入したわけではありません。
+
 ## DYNAMIXEL Wizard 2
 
 - [ROBOTIS公式e-Manual](https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/)はWindows 10 / 11（64 bit）、Ubuntu 22.04 / 24.04（64 bit）を対応OSとして案内しています。Windows x64、Linux x64、Linux ARM64のリンクがあり、ARM64についてJetson AGX Orin / Raspberry Pi 5への言及があります。

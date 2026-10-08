@@ -16,8 +16,12 @@ function Invoke-BootstrapProcess {
     )
     $stdout = Join-Path $temporaryRoot ($LogPrefix + '.stdout.log')
     $stderr = Join-Path $temporaryRoot ($LogPrefix + '.stderr.log')
-    $process = Start-Process -FilePath (Join-Path $System32 'cmd.exe') `
-        -ArgumentList @('/d', '/c', 'bootstrap.cmd') `
+    # 対話的な配置入口は隔離fixtureで別途検証し、ここでは従来どおり導入本体を試験する。
+    $env:LAB_DEV_ENV_ROOT = $Source
+    $command = '$p=Join-Path $env:LAB_DEV_ENV_ROOT ''scripts/bootstrap.ps1''; $c=[IO.File]::ReadAllText($p,[Text.UTF8Encoding]::new($false)); & ([ScriptBlock]::Create($c))'
+    $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))
+    $process = Start-Process -FilePath (Join-Path $System32 'WindowsPowerShell\v1.0\powershell.exe') `
+        -ArgumentList @('-NoProfile', '-EncodedCommand', $encoded) `
         -WorkingDirectory $Source -Wait -PassThru -NoNewWindow `
         -RedirectStandardOutput $stdout -RedirectStandardError $stderr
     foreach ($log in @($stdout, $stderr)) {
@@ -32,6 +36,7 @@ function Invoke-BootstrapProcess {
 $originalPath = $env:Path
 $originalLocalAppData = $env:LOCALAPPDATA
 $originalCleanBootstrap = $env:LAB_DEV_ENV_CLEAN_BOOTSTRAP_CI
+$originalRepositoryRoot = $env:LAB_DEV_ENV_ROOT
 $originalUserPath = [Environment]::GetEnvironmentVariable('Path', 'User')
 $temporaryBase = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { $env:TEMP }
 $temporaryRoot = Join-Path $temporaryBase ('lab-dev-env-clean-bootstrap-' + [guid]::NewGuid().ToString('N'))
@@ -123,6 +128,7 @@ finally {
     $env:Path = $originalPath
     $env:LOCALAPPDATA = $originalLocalAppData
     $env:LAB_DEV_ENV_CLEAN_BOOTSTRAP_CI = $originalCleanBootstrap
+    $env:LAB_DEV_ENV_ROOT = $originalRepositoryRoot
     if (Test-Path -LiteralPath $temporaryRoot) {
         Remove-Item -LiteralPath $temporaryRoot -Recurse -Force
     }

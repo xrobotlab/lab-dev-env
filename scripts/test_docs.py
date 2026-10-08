@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 import unittest
 
@@ -11,6 +12,17 @@ SKIP_PARTS = {".git", ".venv", ".mise"}
 
 
 class DocumentationTests(unittest.TestCase):
+    def test_windows_source_inventory_matches_tracked_files(self) -> None:
+        if not (ROOT / ".git").exists():
+            self.skipTest("配布ZIPではGit追跡情報がない")
+        manifest = ROOT / "config/windows-source-files.txt"
+        inventory = [line for line in manifest.read_text(encoding="utf-8").splitlines()
+                     if line and not line.startswith("#")]
+        tracked = subprocess.check_output(
+            ["git", "ls-files", "-z"], cwd=ROOT).decode("utf-8").rstrip("\0").split("\0")
+        self.assertEqual(len(inventory), len(set(inventory)), "配布一覧に重複がある")
+        self.assertEqual(set(inventory), set(tracked), "ZIPコピー一覧を追跡ファイルと同期する")
+
     def test_local_markdown_links_exist(self) -> None:
         failures: list[str] = []
         for document in ROOT.rglob("*.md"):
