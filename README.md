@@ -102,6 +102,32 @@ just doctor-full
 just setup
 ```
 
+## B3でDYNAMIXEL SDKを使う
+
+bootstrapは `uv sync --locked --project b3` により、Python版の `dynamixel-sdk==4.1.0` を、このリポジトリ内の `b3/.venv` に導入します。Pythonやuvなどの共通ツールはmise、SDKはB3プロジェクトのuv依存関係として管理します。SDKはグローバルなPython環境には導入されません。
+
+セットアップ後にターミナルを再起動し、このリポジトリのルート（`lab-dev-env`）で実行します。コードでは `import dynamixel_sdk` として読み込みます。
+
+```sh
+just b3-check
+uv run --locked --project b3 python path/to/script.py
+```
+
+`path/to/script.py` は、リポジトリのルートからの相対パス、または絶対パスに置き換えます。`ModuleNotFoundError: No module named 'dynamixel_sdk'` が出る場合は、別のPython環境で実行していないか確認し、上記の `uv run` でB3環境を指定してください。`just b3-check` はSDKのimportとバージョン表示を確認するもので、実機通信を確認するものではありません。
+
+対象はPython版SDKの導入です。C/C++版SDKのビルド、USBドライバー、DYNAMIXEL Wizard 2の導入、モーターのファームウェア更新は含みません。
+
+卒研・修研などの別プロジェクトでSDKを使う場合は、そのリポジトリ自身の `pyproject.toml` / `uv.lock` に依存関係を宣言してください。詳細は [B3共通環境](b3/README.md) と [ADR 0002](docs/adr/0002-toolchain-and-project-dependencies.md) を参照してください。
+
+## IDEの手動導入
+
+VS CodeとArduino IDE 2はbootstrapで自動導入されません。必要に応じて公式配布元から利用するOSの版を手動導入してください。
+
+- **VS Code**: Windowsでは [公式Windows導入手順](https://code.visualstudio.com/docs/setup/windows) の **User Installer** を使用します。macOS / Linux版は [公式Downloads](https://code.visualstudio.com/Download) を参照してください。
+- **Arduino IDE 2**: [Arduino公式Downloads](https://www.arduino.cc/en/software/) の **Arduino IDE 2** からWindows / macOS / Linux版を選択します。
+
+IDEの使い方や拡張機能の設定はB3ゼミで扱います。
+
 ## ドキュメント
 
 OS別の詳細手順、対象ツール、設計判断は [docs/](docs/README.md) を参照してください。
