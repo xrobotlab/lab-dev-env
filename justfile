@@ -23,13 +23,16 @@ doctor:
 doctor-full:
     uv run --locked --project b3 python scripts/doctor.py --require-gui
 
-# miseで固定した各ツールのバージョンを表示する。
+# 標準CLIとB3環境のDYNAMIXEL SDKのバージョンを表示する。
 versions:
+    git --version
     mise --version
     python --version
     node --version
     npm --version
+    npx --version
     uv --version
     just --version
     pio --version
     gh --version
+    uv run --locked --project b3 python -c "import importlib.metadata as m; print('dynamixel-sdk', m.version('dynamixel-sdk'))"

@@ -55,6 +55,8 @@ jobs:
         run: uv sync --locked --project b3
       - name: DYNAMIXEL SDKを確認
         run: uv run --locked --project b3 python -c "import importlib.metadata as m; import dynamixel_sdk; assert m.version('dynamixel-sdk') == '4.1.0'"
+      - name: 標準CLIとB3 SDKのバージョン一覧を確認
+        run: just versions
       - name: 診断の失敗判定と固定版の整合性を確認
         run: uv run --locked --project b3 python -B -m unittest discover -s scripts -p 'test_*.py'
       - name: 環境診断

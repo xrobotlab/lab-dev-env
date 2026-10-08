@@ -2,19 +2,49 @@
 
 XRobotLabの研究室PC向け標準開発環境です。
 
+## 導入先とコマンドの実行場所
+
+このリポジトリはセットアップ後も環境の確認・再同期に使います。一時フォルダーやダウンロードフォルダー、OneDriveなどの同期対象を避け、通常権限で書き込めるユーザー領域に残してください。推奨する配置場所は次のとおりです。
+
+| OS | 推奨場所 |
+| --- | --- |
+| Windows | `%USERPROFILE%\source\lab-dev-env` |
+| macOS / Linux | `~/source/lab-dev-env` |
+
+セットアップ後の `just` 本体は他の場所からも呼び出せますが、`just setup`、`just doctor-full`、`just versions` などのレシピは、このリポジトリの [justfile](justfile) を使います。本文の `just` / `uv` コマンドは、セットアップ後にターミナルを再起動してからリポジトリのルート（`lab-dev-env`）で実行してください。
+
+Windowsでは次のように移動します。
+
+```bat
+cd /d "%USERPROFILE%\source\lab-dev-env"
+just versions
+```
+
+macOS / Linuxでは次のように移動します。
+
+```sh
+cd "$HOME/source/lab-dev-env"
+just versions
+```
+
+`just` は親ディレクトリの `justfile` も探すため、このリポジトリの子ディレクトリからも実行できます。別の場所で使う場合は上記のように移動するか、`just --justfile "リポジトリの絶対パス/justfile" versions` のように、実際の `justfile` の絶対パスを指定してください。`just versions` は標準CLIとB3環境のDYNAMIXEL SDKのバージョンを表示します。
+
 ## Windows 11
 
 ### 1. リポジトリを取得してセットアップ
 
-GitがないPCでは、GitHubの **Code → Download ZIP** からこのリポジトリを取得し、ZIPを展開して `bootstrap.cmd` を実行します。
+GitがないPCでは、GitHubの **Code → Download ZIP** からこのリポジトリを取得します。ZIP内のフォルダーを `%USERPROFILE%\source\lab-dev-env` に配置してください（`lab-dev-env-main` という名前なら `lab-dev-env` に変更）。配置したフォルダーで `bootstrap.cmd` を実行します。
 
 ```bat
+cd /d "%USERPROFILE%\source\lab-dev-env"
 bootstrap.cmd
 ```
 
 Gitがある場合は次でも開始できます。
 
 ```bat
+if not exist "%USERPROFILE%\source" mkdir "%USERPROFILE%\source"
+cd /d "%USERPROFILE%\source"
 git clone https://github.com/xrobotlab/lab-dev-env.git
 cd lab-dev-env
 bootstrap.cmd
@@ -41,6 +71,8 @@ just doctor-full
 Gitを用意したうえで実行します。
 
 ```sh
+mkdir -p "$HOME/source"
+cd "$HOME/source"
 git clone https://github.com/xrobotlab/lab-dev-env.git
 cd lab-dev-env
 ./bootstrap.sh
@@ -73,6 +105,8 @@ just doctor-full
 Gitを用意したうえで実行します。
 
 ```sh
+mkdir -p "$HOME/source"
+cd "$HOME/source"
 git clone https://github.com/xrobotlab/lab-dev-env.git
 cd lab-dev-env
 ./bootstrap.sh
