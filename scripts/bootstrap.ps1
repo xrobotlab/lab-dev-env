@@ -68,19 +68,25 @@ function Install-GuiApp {
     $installer = Get-VerifiedDownload $App.url $App.sha256 "$Name-setup.exe"
     Write-Host "$Name の対話インストーラーを起動します。ユーザー単位の導入を選び、画面の手順に従ってください。"
     Write-Host "管理者権限を要求された場合はキャンセルし、研究室の管理者に相談してください。"
+    Write-Host "[待機中] $Name のインストール画面を操作してください。別ウィンドウのインストールが終わるまで、このターミナルは閉じないでください。"
+    Write-Host '完了画面ではアプリの起動を選ばずに閉じてください。起動した場合はそのアプリを閉じるとセットアップが続きます。'
     Invoke-Installer $installer ($App.arguments -join ' ') -Interactive
     # 対話画面で別の場所を選んだ場合も、登録されたインストール先から確認する。
+    $matchingAfterInstall = @(Get-InstalledApp $App.displayNamePattern |
+        Where-Object { $_.DisplayVersion -match $versionPattern })
     $candidates = @($executable)
-    foreach ($entry in @(Get-InstalledApp $App.displayNamePattern)) {
+    foreach ($entry in $matchingAfterInstall) {
         if ($entry.InstallLocation) { $candidates += Join-Path $entry.InstallLocation $App.executable }
         $icon = ($entry.DisplayIcon -replace ',\s*-?\d+$', '').Trim('"')
         if ($icon -and $icon.EndsWith('.exe') -and (Split-Path -Leaf $icon) -notmatch 'unins|setup') {
             $candidates += [Environment]::ExpandEnvironmentVariables($icon)
         }
     }
-    if (-not @($candidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }).Count) {
-        throw "$Name の実行ファイルを確認できません。導入のキャンセルや保存先を確認してください。"
+    if ($matchingAfterInstall.Count -eq 0 -or
+        -not @($candidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }).Count) {
+        throw "$Name $($App.version) の登録バージョンと実行ファイルを確認できません。導入のキャンセルや保存先を確認してください。"
     }
+    Write-Host "$Name の導入を確認しました。セットアップを続けます。"
 }
 
 function Invoke-Checked {
