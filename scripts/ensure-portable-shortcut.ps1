@@ -91,8 +91,10 @@ function Write-LabShortcut {
 
 function Resolve-LabShortcutTarget {
     param([string]$Path)
-    if (-not $Path -or -not [IO.Path]::IsPathRooted($Path)) { return '' }
-    $current = [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($Path))
+    if (-not $Path) { return '' }
+    $expanded = [Environment]::ExpandEnvironmentVariables($Path)
+    if (-not [IO.Path]::IsPathRooted($expanded)) { return '' }
+    $current = [IO.Path]::GetFullPath($expanded)
     if (-not (Test-Path -LiteralPath $current -PathType Leaf)) { return '' }
     # Resolve the opened file, including junctions in ancestor folders.
     # https://learn.microsoft.com/windows/win32/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew

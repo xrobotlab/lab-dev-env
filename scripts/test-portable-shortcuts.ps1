@@ -88,6 +88,23 @@ try {
 finally { [IO.Directory]::Delete($alias) }
 Write-Host 'PASS: ancestor junction vendor launcher preserved without duplicates'
 
+$environment = New-ShortcutFixture 'environment'
+$previousValue = [Environment]::GetEnvironmentVariable('LAB_SHORTCUT_TEST_BIN', 'Process')
+try {
+    [Environment]::SetEnvironmentVariable('LAB_SHORTCUT_TEST_BIN', (Split-Path -Parent $environment.Target), 'Process')
+    $variableTarget = '%LAB_SHORTCUT_TEST_BIN%\bambu-studio.exe'
+    Assert-True ((Resolve-LabShortcutTarget $variableTarget) -eq (Resolve-LabShortcutTarget $environment.Target)) '環境変数展開後に絶対パスを判定します。'
+    Assert-True ((Resolve-LabShortcutTarget '%LAB_SHORTCUT_UNKNOWN%\bambu-studio.exe') -eq '') '未解決変数・相対パスは拒否します。'
+    $existing = Join-Path $environment.Programs 'Vendor environment launcher.lnk'
+    Write-LabShortcut $existing $variableTarget 'user-owned'
+    $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $existing).Hash
+    $code = Ensure-LabPortableShortcut $environment.Programs $environment.Common $environment.Target 'Bambu Studio' 'Bambulab.Bambustudio'
+    Assert-True ($code -eq 0 -and -not [IO.File]::Exists($environment.Destination)) '環境変数入り既存リンクを再利用し、重複を防ぎます。'
+    Assert-True ((Get-FileHash -Algorithm SHA256 -LiteralPath $existing).Hash -eq $hash) '環境変数入り既存リンクを保持します。'
+}
+finally { [Environment]::SetEnvironmentVariable('LAB_SHORTCUT_TEST_BIN', $previousValue, 'Process') }
+Write-Host 'PASS: environment-variable vendor launcher preserved without duplicates'
+
 $collision = New-ShortcutFixture 'collision'
 [IO.Directory]::CreateDirectory((Split-Path -Parent $collision.Destination)) | Out-Null
 [IO.File]::WriteAllText($collision.Destination, 'unrelated user file')
