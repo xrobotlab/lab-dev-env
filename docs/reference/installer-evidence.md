@@ -8,27 +8,31 @@
 - [公式の展開手順](https://gitforwindows.org/zip-archives-extracting-the-released-archives.html)は自己展開アーカイブの `-y -gm2` を文書化しています。[現行PortableGit生成スクリプト](https://github.com/git-for-windows/build-extra/blob/main/portable/release.sh)では、既定展開先をアーカイブと同じ場所の `PortableGit` とし、展開後に `post-install.bat` を実行します。bootstrapは一時領域へこの既定方式で展開し、`cmd/git.exe` を確認してからユーザー領域へ移動します。
 - [mise公式レジストリ](https://mise.jdx.dev/registry.html)にGitHub CLIの `aqua:cli/cli` バックエンドがあります。gh 2.102.0のWindows / Linux / macOS用アーカイブとSHA-256は[公式リリースの配布物一覧](https://github.com/cli/cli/releases/expanded_assets/v2.102.0)と照合できます。導入は認証・組織参加とは別です。
 
-## GIMP
+## 標準GUIのパッケージ管理
 
-- [公式ダウンロードページ](https://www.gimp.org/downloads/)では現行安定版は3.2.6。Windows x64 / ARM64対応の `gimp-3.2.6-setup.exe` とSHA-256が掲載されています。設定のURL・ハッシュと一致しました。
-- [3.2.6タグの公式インストーラソース](https://raw.githubusercontent.com/GNOME/gimp/GIMP_3_2_6/build/windows/installer/gimp-setup.iss)はInno Setup 6を使用し、`PrivilegesRequired=lowest`、`PrivilegesRequiredOverridesAllowed=dialog` を指定しています。既定の導入先は安定版では `GIMP 3` です。
-- [公式ビルド定義](https://github.com/GNOME/gimp/blob/GIMP_3_2_6/meson.build)は実行ファイル名をメジャー・マイナーバージョンから生成するため、3.2系の実行ファイルは `gimp-3.2.exe` として扱います。
-- [Inno Setupの公式オプション](https://jrsoftware.org/ishelp/topic_setupcmdline.htm)は `/CURRENTUSER` などを説明しています。[`dialog` の仕様](https://jrsoftware.org/ishelp/topic_setup_privilegesrequiredoverridesallowed.htm)は `commandline` の上書きも許可します。今回の実装は `/CURRENTUSER` のみ指定し、無人導入用の引数は使わず対話画面で導入します。
+確認日: 2026-10-08。GUIの版・SHA-256はリポジトリで固定しません。配布元の現在の定義をパッケージ管理ツールが検証します。資料・fixtureの確認は実アプリ導入試験とは別です。
 
-## KiCad
+Windowsの現在の公式winget定義を確認しました。
 
-- [公式Windowsダウンロードページ](https://www.kicad.org/download/windows/)の現行安定版は10.0.6です。今回の固定候補9.0.9は最新とは呼びません。[9.0.9公式配布物一覧](https://github.com/KiCad/kicad-source-mirror/releases/expanded_assets/9.0.9)のx64版URL・SHA-256は設定の値と一致しました。
-- [公式パッケージ作成ソース](https://gitlab.com/kicad/packaging/kicad-win-builder/-/raw/master/nsis/install-8-9-10.nsi)はNSIS 3を使用します。[同梱MultiUser実装](https://gitlab.com/kicad/packaging/kicad-win-builder/-/raw/master/nsis/includes/NsisMultiUser.nsh)は `RequestExecutionLevel user` とユーザー単位導入を定義しています。
-- [公式プロジェクトの保守担当者の回答](https://gitlab.com/kicad/packaging/kicad-win-builder/-/work_items/135)は `/S` に `/allusers` または `/currentuser` の併用が必要としています。今回の実装は `/S` を外し、ユーザー単位を指定する `/currentuser` のみ使って対話導入します。ただしソース・回答の確認は、固定した9.0.9実ファイルの実行試験を代替しません。
-- 同パッケージソースには、条件に応じてVisual C++ Runtimeを導入する処理もあります。アプリ本体のユーザー単位導入とは別に、前提コンポーネントの管理者作業が必要な場合があります。権限要求は自動承認しません。
+| ID | 確認した配布形式 | bootstrapの選択 |
+| --- | --- | --- |
+| [GIMP.GIMP.3](https://github.com/microsoft/winget-pkgs/tree/master/manifests/g/GIMP/GIMP/3) | Inno、user / machine | user、inno、対話式 |
+| [KiCad.KiCad](https://github.com/microsoft/winget-pkgs/tree/master/manifests/k/KiCad/KiCad) | NSIS、user / machine | user、nullsoft、対話式 |
+| [Microsoft.VisualStudioCode](https://github.com/microsoft/winget-pkgs/tree/master/manifests/m/Microsoft/VisualStudioCode) | Inno、user / machine | user、inno、対話式 |
+| [ArduinoSA.IDE.stable](https://github.com/microsoft/winget-pkgs/tree/master/manifests/a/ArduinoSA/IDE/stable) | ZIP + nested portable、scope未記載 / NSIS / machine MSI | user、portable限定 |
+| [Bambulab.Bambustudio](https://github.com/microsoft/winget-pkgs/tree/master/manifests/b/Bambulab/Bambustudio) | machine NSIS / ZIP + nested portable、scope未記載 | user、portable限定 |
 
-## 対話インストーラーの待機
+[winget公式install仕様](https://learn.microsoft.com/en-us/windows/package-manager/winget/install)のexact・source・scope・installer-type・no-upgradeを指定します。Portableは[公式選択処理](https://github.com/microsoft/winget-cli/blob/master/src/AppInstallerCommonCore/Manifest/ManifestComparator.cpp)でscope未記載でもuser指定を受理し、[配置処理](https://github.com/microsoft/winget-cli/blob/master/src/AppInstallerCLICore/Workflows/PortableFlow.cpp)がユーザー領域へ周辺ファイルも配置します。適用不能・取得エラーでmachineやEXEへ条件を緩めません。
 
-確認日: 2026-10-08。[PowerShell 5.1のStart-Process公式仕様](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/start-process?view=powershell-5.1)では、`-Wait` は起動したプロセスと子孫プロセスの終了まで待ちます。bootstrapはこの待機を維持し、待機するアプリ名と、ターミナルを閉じずに対話画面を操作する案内を起動前に表示します。終了コードが0で、期待版の登録と実行ファイルを確認できた場合にだけ次へ進みます。
+KiCadは本体がユーザー単位でも、[公式パッケージソース](https://gitlab.com/kicad/packaging/kicad-win-builder/-/raw/master/nsis/install-8-9-10.nsi)にVisual C++ Runtimeの前提導入があります。権限要求はキャンセルして管理者へ相談します。依存パッケージの自動導入はskip-dependenciesで抑止しますが、インストーラー自身の要求を保証するものではありません。
 
-上記のGIMP公式ソースの `[Run]` は、完了後のアプリ起動に `unchecked postinstall nowait` を指定しています。アプリを起動するとその終了も待つため、完了画面では起動を選ばない案内を出します。KiCadの上記パッケージソースも、Visual C++ Runtimeの前提導入に `ExecWait` を使用しています。
+macOSの現在の公式cask: [GIMP](https://github.com/Homebrew/homebrew-cask/blob/main/Casks/g/gimp.rb)、[VS Code](https://github.com/Homebrew/homebrew-cask/blob/main/Casks/v/visual-studio-code.rb)、[Arduino IDE](https://github.com/Homebrew/homebrew-cask/blob/main/Casks/a/arduino-ide.rb)、[Bambu Studio](https://github.com/Homebrew/homebrew-cask/blob/main/Casks/b/bambu-studio.rb)はapp配置に対応します。[KiCad](https://github.com/Homebrew/homebrew-cask/blob/main/Casks/k/kicad.rb)は共有 /Library artifactを含むので手動扱いです。
 
-子を起動した親が先に終了するケースは、イベントで子の終了を制御する無害なfixtureで待機を確認します。実物のGIMP／KiCadをこの試験で導入したわけではありません。
+[Homebrew公式manpage](https://docs.brew.sh/Manpage)のNO_SUDO、NO_INSTALL_UPGRADE、NO_AUTO_UPDATE、NO_INSTALL_CLEANUPをプロセス単位で設定し、[公式SystemConfig](https://github.com/Homebrew/brew/blob/main/Library/Homebrew/system_config.rb)によるbrew config出力で認識を確認します。既存brewの制御が使えない場合は手動導入へ戻します。公式caskに限定し、pkg・導入script・共有artifact・追加formula/cask依存を検査して除外します。appdirは ~/Applications、no-binariesで追加リンクを避けます。Homebrewの初期導入、sudo、quarantine解除は行いません。
+
+## インストーラーの待機
+
+Windowsは[PowerShell 5.1 Start-Process](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/start-process?view=powershell-5.1)のWaitでwingetとその子孫の終了を待ちます。待機するアプリ名とターミナルを閉じない案内を起動前に表示し、終了コードと実行ファイルを再確認します。既存アプリの版は比較・更新しません。終了コード0でも未検出なら成功にはしません。
 
 ## DYNAMIXEL Wizard 2
 

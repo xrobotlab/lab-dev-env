@@ -43,15 +43,15 @@ class DoctorTests(unittest.TestCase):
             self.assertFalse(doctor.run(["docker"])[0])
 
     def test_gui_absence_is_reported(self):
-        with patch.object(doctor.shutil, "which", return_value=None), patch.object(doctor, "windows_apps", return_value=[]), \
+        with patch.object(doctor.shutil, "which", return_value=None), patch.object(doctor.gui_tools, "windows_apps", return_value=[]), \
              patch.object(doctor.Path, "is_file", return_value=False), contextlib.redirect_stdout(io.StringIO()) as output:
-            self.assertEqual(doctor.gui_report(), 3)
+            self.assertEqual(doctor.gui_report(), 6)
         self.assertIn("DYNAMIXEL_WIZARD_PATH", output.getvalue())
 
     def test_explicit_wizard_location_is_detected(self):
         target = sys.executable
         with patch.dict(os.environ, {"DYNAMIXEL_WIZARD_PATH": target}), \
-             patch.object(doctor.shutil, "which", return_value=None), patch.object(doctor, "windows_apps", return_value=[]), \
+             patch.object(doctor.shutil, "which", return_value=None), patch.object(doctor.gui_tools, "windows_apps", return_value=[]), \
              contextlib.redirect_stdout(io.StringIO()) as output:
             doctor.gui_report()
         self.assertIn("[検出] DYNAMIXEL Wizard 2", output.getvalue())
@@ -59,7 +59,7 @@ class DoctorTests(unittest.TestCase):
     def test_non_executable_wizard_location_is_not_detected(self):
         target = str(ROOT / "README.md")
         with patch.dict(os.environ, {"DYNAMIXEL_WIZARD_PATH": target}), \
-             patch.object(doctor.shutil, "which", return_value=None), patch.object(doctor, "windows_apps", return_value=[]), \
+             patch.object(doctor.shutil, "which", return_value=None), patch.object(doctor.gui_tools, "windows_apps", return_value=[]), \
              contextlib.redirect_stdout(io.StringIO()) as output:
             doctor.gui_report()
         self.assertIn("[手動] DYNAMIXEL Wizard 2", output.getvalue())
@@ -80,15 +80,13 @@ class DoctorTests(unittest.TestCase):
         for platform in ("windows-x64", "linux-x64", "linux-arm64", "macos-x64", "macos-arm64"):
             self.assertRegex(entry[f"platforms.{platform}"]["checksum"], r"^sha256:[a-f0-9]{64}$")
         manifest = json.loads((ROOT / "config/windows-apps.json").read_text())
-        for name in ("git", "gimp", "kicad"):
-            self.assertTrue(manifest[name]["url"].startswith("https://"))
-            self.assertRegex(manifest[name]["sha256"], r"^[a-f0-9]{64}$")
-        self.assertEqual(manifest["gimp"]["executable"], "bin/gimp-3.2.exe")
-        self.assertEqual(manifest["dynamixelWizard"]["installMode"], "manual")
-        self.assertNotIn("arguments", manifest["dynamixelWizard"])
-        for name, argument in (("gimp", "/CURRENTUSER"), ("kicad", "/currentuser")):
-            self.assertEqual(manifest[name]["installMode"], "interactive")
-            self.assertEqual(manifest[name]["arguments"], [argument])
+        self.assertTrue(manifest["git"]["url"].startswith("https://"))
+        self.assertRegex(manifest["git"]["sha256"], r"^[a-f0-9]{64}$")
+        self.assertEqual(set(manifest), {"git"})
+        apps = doctor.gui_tools.inventory()
+        self.assertEqual(len(apps), 6)
+        self.assertTrue(all("version" not in app for app in apps))
+        self.assertNotIn("winget", next(app for app in apps if app["id"] == "dynamixelWizard"))
 
 
 if __name__ == "__main__":

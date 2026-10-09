@@ -48,26 +48,51 @@ $rejected = $false
 try { Invoke-Installer 'installer.exe' '/currentuser' -Interactive } catch { $rejected = $true }
 Assert-True $rejected 'インストーラーの失敗を伝える必要があります。'
 
-$oldLocalAppData = $env:LOCALAPPDATA
-try {
-    $env:LOCALAPPDATA = $TemporaryRoot
-    $script:InstallerExitCode = 0
-    $app = [pscustomobject]@{
-        installMode = 'interactive'; installDirectory = 'Programs/GIMP 3'; executable = 'bin/gimp-3.2.exe'
-        displayNamePattern = 'GIMP*'; version = '3.2.6'; url = 'https://example.invalid/gimp'; sha256 = $hash
-        arguments = @('/CURRENTUSER')
-    }
-    function Get-InstalledApp { param($Pattern) }
-    $rejected = $false
-    try { Install-GuiApp 'gimp' $app } catch { $rejected = $true }
-    Assert-True $rejected '終了コード0でも導入先が未検出なら完了と判定しません。'
+Write-Host 'bootstrap関数検証: PASS（PortableGitのハッシュ、HTTPS、起動、終了コード）'
 
-    $bin = Join-Path $TemporaryRoot 'Programs/GIMP 3/bin'
-    New-Item -ItemType Directory -Path $bin -Force | Out-Null
-    [IO.File]::WriteAllText((Join-Path $bin 'gimp-3.2.exe'), '検出用の未実行ファイル')
-    function Get-InstalledApp { param($Pattern) [pscustomobject]@{ DisplayVersion = '3.2.6.0' } }
-    function Invoke-WebRequest { throw '導入済みのGIMPを再ダウンロードしてはいけません。' }
-    Install-GuiApp 'gimp' $app
+# Native fixtureのみを起動する。mise・GUI導入・ユーザー環境の変更は実行しない。
+$nativeFixture = Join-Path $TemporaryRoot "native fixture 日本語's & [1]!.exe"
+$compiledFixture = Join-Path $TemporaryRoot 'native-compiled.exe'
+Add-Type -OutputAssembly $compiledFixture -OutputType ConsoleApplication -TypeDefinition @'
+using System;
+public static class BootstrapNativeFixture {
+    public static int Main(string[] args) {
+        Console.Out.WriteLine("mise 2026.10.3");
+        if (args.Length > 1) Console.Out.WriteLine("argument: " + args[1]);
+        Console.Error.WriteLine("mise WARN mise version 2026.10.4 available");
+        Console.Error.WriteLine("stderr diagnostics retained");
+        return Int32.Parse(args[0]);
+    }
 }
-finally { $env:LOCALAPPDATA = $oldLocalAppData }
-Write-Host 'bootstrap関数検証: PASS（ハッシュ、HTTPS、対話起動、終了コード、未導入、再実行）'
+'@
+[IO.File]::Move($compiledFixture, $nativeFixture)
+$captured = @(Invoke-NativeOutput -FilePath $nativeFixture -Arguments @('0') 6>&1)
+$exitCode = $LASTEXITCODE
+$stdout = @($captured | Where-Object { $_ -is [string] })
+$stderr = ($captured | Where-Object { $_ -is [System.Management.Automation.InformationRecord] } |
+    ForEach-Object { $_.ToString() }) -join "`n"
+Assert-True ($exitCode -eq 0 -and $stdout.Count -eq 1 -and $stdout[0] -eq 'mise 2026.10.3') '通知があっても終了0のバージョンstdoutを返します。'
+Assert-True ($stderr -match 'mise WARN mise version 2026.10.4 available' -and
+    $stderr -match 'stderr diagnostics retained') 'stderr通知を消さずに表示します。'
+Assert-True ($ErrorActionPreference -eq 'Stop') '呼び出し元のStopを変更しません。'
+
+$captured = @(Invoke-Checked -FilePath $nativeFixture -Arguments @('0') 6>&1)
+Assert-True ($LASTEXITCODE -eq 0) '通知+終了0の通常コマンドも完了します。'
+Assert-True (($captured -join "`n") -match 'mise WARN') 'checked呼び出しでも通知を保持します。'
+$checkedError = ''
+try { Invoke-Checked -FilePath $nativeFixture -Arguments @('7') | Out-Null }
+catch { $checkedError = $_.Exception.Message }
+Assert-True ($checkedError -match '終了コード: 7') '通知+非0では実終了コードを伴って失敗します。'
+Assert-True ($ErrorActionPreference -eq 'Stop') '失敗後も呼び出し元のStopを変更しません。'
+
+$captured = @(Invoke-NativeOutput -FilePath $nativeFixture -Arguments @('2') 6>&1)
+Assert-True ($LASTEXITCODE -eq 2) 'GUIの手動未完了コード2を0へ変更しません。'
+$argument = "C:\repo path 日本語's & [1]!\mise.toml"
+$captured = @(Invoke-NativeOutput -FilePath $nativeFixture -Arguments @('0', $argument) 6>&1)
+Assert-True (@($captured | Where-Object { $_ -is [string] })[1] -eq ('argument: ' + $argument)) 'Unicode・空白・記号を含む引数を保持します。'
+$launchRejected = $false
+try { Invoke-NativeOutput -FilePath (Join-Path $TemporaryRoot 'missing-native.exe') -Arguments @('0') | Out-Null }
+catch { $launchRejected = $true }
+Assert-True $launchRejected '実行ファイルの起動失敗は通知扱いせず停止します。'
+Assert-True ($ErrorActionPreference -eq 'Stop') '起動失敗後も呼び出し元のStopを保持します。'
+Write-Host 'ネイティブ出力検証: PASS（通知+0、通知+非0、stderr表示、終了2、引数、起動失敗、Stop保持）'

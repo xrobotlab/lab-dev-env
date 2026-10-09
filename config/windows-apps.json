@@ -3,38 +3,5 @@
     "version": "2.56.0.2",
     "url": "https://github.com/git-for-windows/git/releases/download/v2.56.0.windows.2/PortableGit-2.56.0.2-64-bit.7z.exe",
     "sha256": "075e158ef8e1f0ab80b347e245405d3eca735c2dc88fd8e032e137d0ca61f61b"
-  },
-  "gimp": {
-    "installMode": "interactive",
-    "installDirectory": "Programs/GIMP 3",
-    "executable": "bin/gimp-3.2.exe",
-    "version": "3.2.6",
-    "displayNamePattern": "GIMP*",
-    "url": "https://download.gimp.org/gimp/v3.2/windows/gimp-3.2.6-setup.exe",
-    "sha256": "9337cccbc01d4098ee7a3dab215b3afbe6ece99c5287c92441d6f12cf541ebca",
-    "arguments": [
-      "/CURRENTUSER"
-    ]
-  },
-  "kicad": {
-    "installMode": "interactive",
-    "installDirectory": "Programs/KiCad/9.0",
-    "executable": "bin/kicad.exe",
-    "version": "9.0.9",
-    "displayNamePattern": "KiCad 9.0*",
-    "url": "https://github.com/KiCad/kicad-source-mirror/releases/download/9.0.9/kicad-9.0.9-x86_64.exe",
-    "sha256": "7f1d315c232e43961ab96c5df8bdbb6b7c0324bf2287b1d573e9509f4c4e6132",
-    "arguments": [
-      "/currentuser"
-    ]
-  },
-  "dynamixelWizard": {
-    "displayNamePattern": "DYNAMIXEL Wizard*",
-    "installMode": "manual",
-    "silentInstallStatus": "UNKNOWN",
-    "manualUrl": "https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/",
-    "windowsUrl": "https://www.robotis.com/service/download.php?no=1670",
-    "linuxX64Url": "https://www.robotis.com/service/download.php?no=1671",
-    "linuxArm64Url": "https://www.robotis.com/service/download.php?no=2233"
   }
 }

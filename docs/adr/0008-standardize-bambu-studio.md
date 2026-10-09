@@ -13,10 +13,10 @@
 
 研究室の3Dプリンタを利用する場合はBambu Studioを標準スライサーとして案内します。
 
-Bambu Studioはbootstrapで自動導入せず、各OS向けの公式Public Releaseを手動導入します。
+2026-10-08の [ADR 0009](0009-standard-gui-package-management.md) によりBambu Studioを標準GUI6本の1つとして導入対象に含めます。Windowsはユーザー領域のwinget portable、macOSは対応する既存Homebrew、Linux等は公式Public Releaseの手動手順を使用します。
 
 ## 結果
 
 - 利用者がスライサー選定で迷いにくくなる
 - Bambu Labプリンタの設定・操作ノウハウを共有しやすくなる
-- 3Dプリンタを使用しない利用者には不要なソフトを導入しない
+- 3Dプリンタをまだ使用しない利用者も同じ標準環境を準備できる

@@ -316,56 +316,7 @@ exit 0
     }
     Write-Host 'PASS: actual Start-Process -Wait includes installer descendants; no arbitrary sleep'
 
-    # GUI導入関数の出力と起動順をfixtureで確認する。
-    $originalLocalAppData = $env:LOCALAPPDATA
-    try {
-        $env:LOCALAPPDATA = Join-Path $TemporaryRoot 'gui'
-        function Get-VerifiedDownload { param($Url, $Sha256, $Name) return 'fixture-installer.exe' }
-        function Get-InstalledApp {
-            param($Pattern)
-            if ($script:RegisteredVersion) { [pscustomobject]@{ DisplayVersion = $script:RegisteredVersion } }
-        }
-        function Write-Host { param($Object, $ForegroundColor) $script:Events.Add([string]$Object) }
-        function Start-Process {
-            param($FilePath, $ArgumentList, [switch]$Wait, [switch]$PassThru, $WindowStyle)
-            Assert-True ($Wait -and $PassThru -and $WindowStyle -eq 'Normal') 'GUI完了を子プロセスも含め待ちます。'
-            $script:Events.Add('installer called')
-            if ($script:GuiExit -eq 0 -and $script:CreateExecutable) {
-                [IO.Directory]::CreateDirectory((Split-Path -Parent $script:GuiExe)) | Out-Null
-                [IO.File]::WriteAllText($script:GuiExe, 'fixture executable, never run')
-                $script:RegisteredVersion = if ($script:Scenario -eq 'wrong-version') { '0.9' } else { '1.0' }
-            }
-            return [pscustomobject]@{ ExitCode = $script:GuiExit }
-        }
-        foreach ($name in @('GIMP', 'KiCad')) {
-            foreach ($scenario in @('success', 'cancel', 'failure', 'missing', 'wrong-version', 'legacy-cancel-zero')) {
-                $script:Events = [Collections.Generic.List[string]]::new()
-                $script:GuiExit = if ($scenario -eq 'cancel') { 2 } elseif ($scenario -eq 'failure') { 7 } else { 0 }
-                $script:Scenario = $scenario
-                $script:RegisteredVersion = $null
-                $script:CreateExecutable = $scenario -in @('success', 'wrong-version')
-                $app = [pscustomobject]@{ installMode = 'interactive'; installDirectory = "$name-$scenario"; executable = 'bin/app.exe'; version = '1.0'; displayNamePattern = "$name*"; url = 'https://example.invalid'; sha256 = ('0' * 64); arguments = @('/currentuser') }
-                $script:GuiExe = Join-Path (Join-Path $env:LOCALAPPDATA $app.installDirectory) $app.executable
-                if ($scenario -eq 'legacy-cancel-zero') {
-                    $script:RegisteredVersion = '0.9'
-                    [IO.Directory]::CreateDirectory((Split-Path -Parent $script:GuiExe)) | Out-Null
-                    [IO.File]::WriteAllText($script:GuiExe, 'existing old version')
-                }
-                if ($scenario -eq 'success') { Install-GuiApp $name $app }
-                else { Assert-Rejected { Install-GuiApp $name $app } '失敗|キャンセル|確認できません' }
-                $waiting = @($script:Events | Where-Object { $_ -like "[[]待機中[]] $name *" })
-                Assert-True ($waiting.Count -eq 1 -and $waiting[0].Contains('閉じないでください')) '待機するアプリ名と閉じない案内を出します。'
-                Assert-True ($script:Events.IndexOf($waiting[0]) -lt $script:Events.IndexOf('installer called')) '待機案内は起動より先に出します。'
-                $continued = @($script:Events | Where-Object { $_ -like '*導入を確認しました*' })
-                Assert-True (($continued.Count -eq 1) -eq ($scenario -eq 'success')) '実行ファイルと終了コードを確認できたときだけ続行を表示します。'
-            }
-        }
-    }
-    finally {
-        $env:LOCALAPPDATA = $originalLocalAppData
-        Remove-Item Function:\Write-Host
-    }
-    Write-Host 'PASS: GIMP/KiCad waiting message ordering / success / cancel / failure / missing executable'
+
 }
 finally {
     Set-Location -LiteralPath $originalLocation

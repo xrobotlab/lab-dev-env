@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import importlib.metadata
 import argparse
-import fnmatch
-import json
 import os
 import platform
-import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+import gui_tools
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -53,82 +52,8 @@ def status(ok: bool, name: str, detail: str) -> None:
     print(f"[{marker}] {name:<16} {detail}")
 
 
-def windows_apps() -> list[dict[str, str]]:
-    import winreg
-
-    apps = []
-    for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
-        for view in (winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY):
-            try:
-                key = winreg.OpenKey(hive, r"Software\Microsoft\Windows\CurrentVersion\Uninstall",
-                                     0, winreg.KEY_READ | view)
-            except OSError:
-                continue
-            with key:
-                for index in range(winreg.QueryInfoKey(key)[0]):
-                    try:
-                        with winreg.OpenKey(key, winreg.EnumKey(key, index)) as entry:
-                            app = {}
-                            for field in ("DisplayName", "DisplayVersion", "InstallLocation", "DisplayIcon"):
-                                try:
-                                    app[field] = str(winreg.QueryValueEx(entry, field)[0])
-                                except OSError:
-                                    pass
-                            apps.append(app)
-                    except OSError:
-                        continue
-    return apps
-
-
 def gui_report() -> int:
-    print("\nGUIアプリ（GIMP、KiCad、DYNAMIXEL Wizard 2）")
-    manifest = json.loads((Path(__file__).resolve().parents[1] / "config/windows-apps.json").read_text(encoding="utf-8"))
-    installed = windows_apps() if os.name == "nt" else []
-    missing = 0
-    for key, title, commands in (
-        ("gimp", "GIMP", ("gimp", "gimp-3", "gimp-3.exe")),
-        ("kicad", "KiCad", ("kicad", "kicad.exe")),
-        ("dynamixelWizard", "DYNAMIXEL Wizard 2", ("DynamixelWizard2", "DynamixelWizard2.exe")),
-    ):
-        app = manifest[key]
-        candidates = [Path(p) for command in commands if (p := shutil.which(command))]
-        metadata = []
-        if os.name == "nt":
-            if key != "dynamixelWizard":
-                candidates.append(Path(os.environ.get("LOCALAPPDATA", "")) / app["installDirectory"] / app["executable"])
-            metadata = [a for a in installed if fnmatch.fnmatchcase(a.get("DisplayName", "").lower(), app["displayNamePattern"].lower())]
-            for item in metadata:
-                icon = re.sub(r",-?\d+$", "", item.get("DisplayIcon", "")).strip('"')
-                if icon.lower().endswith(".exe") and "unins" not in Path(icon).name.lower():
-                    candidates.append(Path(os.path.expandvars(icon)))
-                if location := item.get("InstallLocation"):
-                    root = Path(os.path.expandvars(location.strip('"')))
-                    for command in commands:
-                        candidates.extend((root / command, root / "bin" / command))
-        if key == "dynamixelWizard":
-            if custom := os.environ.get("DYNAMIXEL_WIZARD_PATH"):
-                candidates.append(Path(custom).expanduser())
-            roots = [Path.home() / "DYNAMIXEL Wizard 2.0", Path.home() / "DYNAMIXEL2Wizard"]
-            if os.name == "nt":
-                roots += [Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "DYNAMIXEL Wizard 2.0",
-                          Path(os.environ.get("ProgramFiles", "")) / "ROBOTIS" / "DYNAMIXEL Wizard 2.0"]
-            for root in roots:
-                for command in commands:
-                    candidates.extend((root / command, root / "bin" / command))
-        found = next((p for p in candidates if p.is_file() and (
-            p.suffix.lower() == ".exe" if os.name == "nt" else os.access(p, os.X_OK)
-        )), None)
-        if found:
-            version = next((a.get("DisplayVersion", "") for a in metadata if a.get("DisplayVersion")), "")
-            print(f"[検出] {title:<20} {found}" + (f" ({version})" if version else ""))
-            if key != "dynamixelWizard":
-                print(f"       Windows固定版: {app['version']}。検出は起動確認やバージョン一致の保証ではありません。")
-        else:
-            missing += 1
-            print(f"[手動] {title:<20} 未検出。READMEの導入手順を確認してください。")
-            if key == "dynamixelWizard":
-                print(f"       {app['manualUrl']}（独自の場所へ導入した場合はDYNAMIXEL_WIZARD_PATHに実行ファイルを指定）")
-    return missing
+    return gui_tools.report()
 
 
 def docker_report() -> None:

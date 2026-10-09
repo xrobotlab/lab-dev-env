@@ -4,7 +4,7 @@ XRobotLabの研究室PC向け標準開発環境です。B3は次の順に進め�
 
 1. 下の表で導入するものを確認する。
 2. 自分のOSの手順だけを実施する: [Windows 11](#windows-11) / [macOS](#macos) / [Linux](#linux)。
-3. 必要なIDEを手動導入し、共通の完了確認を行う。
+3. 表示された標準GUIの手動導入を済ませ、共通の完了確認を行う。
 
 ## 導入するもの
 
@@ -15,9 +15,12 @@ XRobotLabの研究室PC向け標準開発環境です。B3は次の順に進め�
 | Git | 未導入ならbootstrapが導入 | セットアップ前に用意 |
 | 共通ツール（コマンド）: mise、Python、Node.js/npm/npx、uv、just、gh、PlatformIO | bootstrapが導入 | bootstrapが導入 |
 | Python版DYNAMIXEL SDK 4.1.0 | bootstrapが `b3/.venv` に導入 | bootstrapが `b3/.venv` に導入 |
-| GIMP・KiCad 9.0系 | bootstrap中の対話インストーラーで導入 | 手動導入 |
+| GIMP・KiCad・VS Code | wingetで不足分をユーザー単位で導入 | macOS：GIMP・VS Codeは既存のHomebrewで導入。KiCadは手動導入。<br>Linux：GIMP・KiCad・VS Codeはいずれも手動導入。 |
+| Arduino IDE 2・Bambu Studio | wingetのportable形式で不足分を導入 | macOS：既存のHomebrewで導入。<br>Linux：いずれも手動導入。 |
 | DYNAMIXEL Wizard 2 | 手動導入 | 手動導入 |
-| VS Code・Arduino IDE 2（必要な場合） | 手動導入 | 手動導入 |
+| Docker・Autodesk Fusion（任意） | 必要な場合だけ手動導入 | 必要な場合だけ手動導入（FusionのLinuxネイティブ版はなし） |
+
+標準GUIは上記6本です。GUIの版は固定せず、導入済みアプリは保持します。bootstrapの再実行で既存アプリを更新しません。パッケージ管理ツールが未準備、適用できるユーザー単位の配布物がない、または通常権限で扱えない場合は公式の手動手順が表示されます。任意導入はDockerとFusionだけです。
 
 ## 導入先とコマンドの実行場所
 
@@ -50,9 +53,11 @@ GitがないPCでも、この手順で開始できます。[研究室の公式Gi
 
 必要なファイルが `%USERPROFILE%\source\lab-dev-env` へ自動コピーされ、その場所でPowerShellのセットアップ画面が開きます。手動での配置やコマンド入力は不要です。
 
-GIMPとKiCadが未導入の場合は、別ウィンドウに対話インストーラーが開きます。**インストールが終わるまでセットアップ画面を閉じないでください。** 画面に従ってユーザー単位で導入します。完了画面ではアプリの起動を選ばずに閉じます。起動した場合は、そのアプリも閉じるとセットアップが続きます。
+wingetが利用できる場合、未導入のGIMP・KiCad・VS Codeは別ウィンドウに対話インストーラーが開きます。Arduino IDE 2・Bambu Studioはユーザー領域へportable形式で導入します。**インストールが終わるまでセットアップ画面を閉じないでください。** 画面に従ってユーザー単位で導入します。完了画面ではアプリの起動を選ばずに閉じます。起動した場合は、そのアプリも閉じるとセットアップが続きます。
 
-**`完了。この画面を閉じて構いません。`** と出たら、Enterキーで閉じて次へ進みます。エラー時は完了とは表示されません。表示を控え、原因を解消してから配置先の `bootstrap.cmd` を開いて再実行してください。
+wingetのportable版Bambu Studio・Arduino IDE 2には、ユーザー用スタートメニューの `lab-dev-env` 内へ起動用ショートカットを作ります。スタートメニューでアプリ名を検索して開けます。再実行ではアプリを保持し、不足したショートカットだけを補います。既存のスタートメニューリンクがある場合は再利用し、同名ファイルは上書きしません。
+
+**`完了。この画面を閉じて構いません。`** と出たら、Enterキーで閉じて次へ進みます。**`標準GUIの手動確認が必要`** と出た場合は、表示された公式手順へ進みます。エラー時は完了とは表示されません。表示を控え、原因を解消してから配置先の `bootstrap.cmd` を開いて再実行してください。
 
 「配置先は既に存在します」と出た場合は上書きされていません。既存フォルダー内の `bootstrap.cmd` を使ってください。既存フォルダーが何のものか分からない場合は削除せず、研究室の担当者へ相談してください。
 
@@ -62,7 +67,7 @@ DYNAMIXEL Wizard 2は自動導入されません。[ROBOTIS公式マニュアル
 
 ### 4. 共通の完了確認へ進む
 
-必要な場合は [IDEの手動導入](#ideの手動導入) を済ませ、[導入後の完了確認](#導入後の完了確認) へ進んでください。
+未検出の標準GUIを [公式配布元](#標準guiの公式配布元) から導入し、[導入後の完了確認](#導入後の完了確認) へ進んでください。
 
 ## Linux
 
@@ -93,23 +98,23 @@ cd lab-dev-env
 ./bootstrap.sh
 ```
 
-上から順に、`source` フォルダーを作る、その中へ移動する、リポジトリを取得する、`lab-dev-env` へ移動する、セットアップを開始するコマンドです。`セットアップが完了しました。` で始まる表示が出たら、次の手順へ進みます。
+上から順に、`source` フォルダーを作る、その中へ移動する、リポジトリを取得する、`lab-dev-env` へ移動する、セットアップを開始するコマンドです。CLIが導入されると、標準GUIの結果が表示されます。手動確認が必要と表示された項目を次の手順で導入します。
 
 `sudo` やrootでは実行しないでください。
 
 ### 3. GUIアプリを導入する
 
-`bootstrap.sh` ではGUIアプリを導入しないため、続けて次を手動導入します。
+Linuxでは標準GUIを手動導入します。次の3本に加え、[公式配布元](#標準guiの公式配布元)からVS Code・Arduino IDE 2・Bambu Studioも導入してください。
 
 - **GIMP**: [GIMP公式Downloads](https://www.gimp.org/downloads/)からLinux版を導入
-- **KiCad 9.0系**: 研究室標準のPCB設計ツールとして導入。Ubuntuでは公式の9.0 releases PPAを使用し、その他のLinuxでは[KiCad公式Linux Downloads](https://www.kicad.org/download/arch-linux/)を参照
+- **KiCad**: [KiCad公式Downloads](https://www.kicad.org/download/)から利用ディストリビューション向けの安定版を導入（9.0系への制限はありません）
 - **DYNAMIXEL Wizard 2**: [ROBOTIS公式マニュアル](https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/)からLinux版を導入
 
 DYNAMIXELやUSBシリアル機器を使用する場合、`dialout` などのOS側設定が必要になることがあります。管理者権限が必要な作業は研究室の管理者に依頼してください。
 
 ### 4. 共通の完了確認へ進む
 
-必要な場合は [IDEの手動導入](#ideの手動導入) を済ませ、[導入後の完了確認](#導入後の完了確認) へ進んでください。
+未検出の標準GUIを [公式配布元](#標準guiの公式配布元) から導入し、[導入後の完了確認](#導入後の完了確認) へ進んでください。
 
 </details>
 
@@ -142,28 +147,33 @@ cd lab-dev-env
 ./bootstrap.sh
 ```
 
-上から順に、`source` フォルダーを作る、その中へ移動する、リポジトリを取得する、`lab-dev-env` へ移動する、セットアップを開始するコマンドです。`セットアップが完了しました。` で始まる表示が出たら、次の手順へ進みます。
+上から順に、`source` フォルダーを作る、その中へ移動する、リポジトリを取得する、`lab-dev-env` へ移動する、セットアップを開始するコマンドです。CLIが導入されると、標準GUIの結果が表示されます。手動確認が必要と表示された項目を次の手順で導入します。
 
 `sudo` では実行しないでください。
 
 ### 3. GUIアプリを導入する
 
-`bootstrap.sh` ではGUIアプリを導入しないため、続けて次を手動導入します。
+既存のHomebrewが通常権限の導入制御に対応している場合、GIMP・VS Code・Arduino IDE 2・Bambu Studioの不足分を `~/Applications` に導入します。Homebrew自体はbootstrapで導入しません。未準備なら[公式配布元](#標準guiの公式配布元)から導入してください。
 
-- **GIMP**: [GIMP公式Downloads](https://www.gimp.org/downloads/)からmacOS版DMGを導入
-- **KiCad 9.0.9**: 研究室標準のPCB設計ツールとして[KiCad公式macOS Downloads](https://www.kicad.org/download/macos/)のPrevious Releasesから9.0.9を導入
+KiCadのHomebrew定義は共有領域への配置を含むため、自動導入しません。次を手動導入します。
+
+- **KiCad**: [KiCad公式macOS Downloads](https://www.kicad.org/download/macos/)から安定版を導入
 - **DYNAMIXEL Wizard 2**: [ROBOTIS公式マニュアル](https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/)のmacOS手順から導入
 
 ### 4. 共通の完了確認へ進む
 
-必要な場合は [IDEの手動導入](#ideの手動導入) を済ませ、[導入後の完了確認](#導入後の完了確認) へ進んでください。
+未検出の標準GUIを [公式配布元](#標準guiの公式配布元) から導入し、[導入後の完了確認](#導入後の完了確認) へ進んでください。
 
 </details>
 
-## IDEの手動導入
+## 標準GUIの公式配布元
 
-VS CodeとArduino IDE 2はbootstrapで自動導入されません。必要に応じて公式配布元から利用するOSの版を手動導入してください。
+自動導入が利用できない項目、未検出の項目は次から導入します。すでに導入済みなら版を変更する必要はありません。独自の場所への導入と検出の指定は [GUIアプリ](docs/setup/gui-apps.md) を参照してください。
 
+- **GIMP**: [公式Downloads](https://www.gimp.org/downloads/)
+- **KiCad**: [公式Downloads](https://www.kicad.org/download/)
+- **Bambu Studio**: [公式Downloads](https://bambulab.com/en/download/studio)
+- **DYNAMIXEL Wizard 2**: [ROBOTIS公式マニュアル](https://emanual.robotis.com/docs/en/software/dynamixel/dynamixel_wizard2/)
 - **VS Code**: Windowsでは [公式Windows導入手順](https://code.visualstudio.com/docs/setup/windows) の **User Installer** を使用します。macOS / Linux版は [公式Downloads](https://code.visualstudio.com/Download) を参照してください。
 - **Arduino IDE 2**: [Arduino公式Downloads](https://www.arduino.cc/en/software/) の **Arduino IDE 2** からWindows / macOS / Linux版を選択します。
 
@@ -171,7 +181,7 @@ IDEの使い方や拡張機能の設定はB3ゼミで扱います。
 
 ## 導入後の完了確認
 
-OS別の手順と必要なIDEの導入を済ませたら、新しいPowerShell／ターミナルを開いてください。Windowsではスタートメニューで `PowerShell` を検索し、**Windows PowerShell** を通常権限で開きます。macOS / Linuxは上のOS別手順と同じ方法でターミナルを開きます。次を1行ずつ入力します。
+OS別の手順と標準GUI6本の導入を済ませたら、新しいPowerShell／ターミナルを開いてください。Windowsではスタートメニューで `PowerShell` を検索し、**Windows PowerShell** を通常権限で開きます。macOS / Linuxは上のOS別手順と同じ方法でターミナルを開きます。次を1行ずつ入力します。
 
 WindowsのGit作業コピーを使った場合は、下の1行目を実際に取得したフォルダーのパスへ置き換えます。
 
@@ -191,7 +201,7 @@ just doctor-full
 just b3-check
 ```
 
-1行目はセットアップに使った `lab-dev-env` フォルダーへ移動します。2行目は共通ツールとGIMP・KiCad・DYNAMIXEL Wizard 2の導入を調べ、3行目はB3環境からSDKが読み込めるか確認します。成功すると、それぞれ次の表示を確認できます。
+1行目はセットアップに使った `lab-dev-env` フォルダーへ移動します。2行目は共通ツールと標準GUI6本の導入を調べ、3行目はB3環境からSDKが読み込めるか確認します。成功すると、それぞれ次の表示を確認できます。
 
 ```text
 結果: 標準CLI準備完了（GUI検出済み）
@@ -200,7 +210,7 @@ dynamixel-sdk 4.1.0
 
 `just` が見つからない場合は、セットアップの完了表示が出たことと、新しくPowerShell／ターミナルを開いたことを確認します。`[失敗]` や `準備未完了` が出た場合は表示された項目の導入を確認し、解決しなければエラー表示を添えて研究室の担当者へ相談してください。
 
-この確認は共通ツール・GUIアプリの導入検出とSDKの読み込みが対象です。IDEの導入、GUIの起動、USBドライバー、実機通信は別途確認が必要です。
+この確認は共通ツール・GUIアプリの導入検出とSDKの読み込みが対象です。GUIの起動、USBドライバー、実機通信は別途確認が必要です。
 
 ## B3でDYNAMIXEL SDKを使う
 
@@ -226,10 +236,9 @@ Pythonやuvなどの共通ツールはmise、SDKはB3プロジェクトのuv依�
 </details>
 
 <details>
-<summary>必要な作業だけ: 3D CAD・3Dプリンター・Docker</summary>
+<summary>必要な作業だけ: 3D CAD・Docker</summary>
 
 - 3D CADを行う場合は [Autodesk Fusion](docs/setup/fusion.md) を手動導入します。
-- 研究室の3Dプリンタを使用する場合は [Bambu Studio](docs/setup/bambu-studio.md) を手動導入します。
 - Dockerが必要な研究・作業では [Dockerの導入手順](docs/setup/docker.md) を実施します。
 
 </details>
@@ -282,15 +291,15 @@ just setup
 | Node.js | JavaScript / TypeScript系の開発・ツール実行 |
 | npm / npx | Node.jsプロジェクトの依存関係管理、npmパッケージのCLI実行 |
 | just | `just setup`、`just doctor` など、研究室で共通化したコマンドの実行 |
-| VS Code | 研究用コードや設定ファイルを編集するコードエディター（必要な場合に手動導入） |
-| Arduino IDE 2 | Arduino用プログラム（スケッチ）の編集・ビルド・マイコンへの書き込み（必要な場合に手動導入） |
+| VS Code | 研究用コードや設定ファイルを編集するコードエディター（標準GUI） |
+| Arduino IDE 2 | Arduino用プログラム（スケッチ）の編集・ビルド・マイコンへの書き込み（標準GUI） |
 | PlatformIO Core | マイコン向けファームウェアのビルド、ライブラリ管理、書き込み |
 | DYNAMIXEL SDK | PythonからDYNAMIXELを制御するためのライブラリ |
 | GIMP | B4論文などで使用する図・画像の作成、加工 |
 | KiCad | 回路図・PCB設計、JLCPCBなどへ発注する製造データの作成 |
 | DYNAMIXEL Wizard 2 | DYNAMIXELの検出、設定変更、診断、ファームウェア管理 |
 | Autodesk Fusion | 3D CAD、機械部品・治具などの3Dモデル作成（必要な場合に手動導入） |
-| Bambu Studio | Bambu Lab製3Dプリンタ向けのスライス、印刷設定、G-code確認（必要な場合に手動導入） |
+| Bambu Studio | Bambu Lab製3Dプリンタ向けのスライス、印刷設定、G-code確認（標準GUI） |
 | Docker | 研究室配布の論文ビルドコンテナなどを実行する場合に使用（任意導入） |
 
 </details>

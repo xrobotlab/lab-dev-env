@@ -16,6 +16,7 @@ $IsGitHubCleanBootstrapCi = (
     $env:LAB_DEV_ENV_CLEAN_BOOTSTRAP_CI -eq "1"
 )
 $SkipGui = $IsGitHubCleanBootstrapCi
+$GuiStatus = 0
 
 function Get-VerifiedDownload {
     param([string]$Url, [string]$Sha256, [string]$Name)
@@ -37,56 +38,26 @@ function Invoke-Installer {
     if ($process.ExitCode -ne 0) { throw "インストーラーが失敗しました（終了コード: $($process.ExitCode)）: $FilePath" }
 }
 
-function Get-InstalledApp {
-    param([string]$Pattern)
-    foreach ($key in @(
-        'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
-        'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
-        'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
-    )) {
-        Get-ItemProperty -Path $key -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like $Pattern }
-    }
-}
+function Invoke-NativeOutput {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments
+    )
 
-function Install-GuiApp {
-    param([string]$Name, $App)
-    if ($App.installMode -ne 'interactive') { throw "$Name の導入方式は対話式にしてください。" }
-    $directory = Join-Path $env:LOCALAPPDATA $App.installDirectory
-    $executable = Join-Path $directory $App.executable
-    $installed = @(Get-InstalledApp $App.displayNamePattern)
-    # GIMPのDisplayVersionは3.2.6.0のように末尾のrevision 0を含む。
-    $versionPattern = '^' + [regex]::Escape($App.version) + '(?:\.0)?$'
-    $matching = @($installed | Where-Object { $_.DisplayVersion -match $versionPattern })
-    if ((Test-Path -LiteralPath $executable) -and $matching.Count -gt 0) {
-        Write-Host "$Name $($App.version) は導入済みです。"
-        return
-    }
-    if ($installed.Count -gt 0 -and -not (Test-Path -LiteralPath $executable)) {
-        Write-Host "[手動] $Name は別の場所に導入されています。READMEの手順で既存環境を確認してください。"
-        return
-    }
-    $installer = Get-VerifiedDownload $App.url $App.sha256 "$Name-setup.exe"
-    Write-Host "$Name の対話インストーラーを起動します。ユーザー単位の導入を選び、画面の手順に従ってください。"
-    Write-Host "管理者権限を要求された場合はキャンセルし、研究室の管理者に相談してください。"
-    Write-Host "[待機中] $Name のインストール画面を操作してください。別ウィンドウのインストールが終わるまで、このターミナルは閉じないでください。"
-    Write-Host '完了画面ではアプリの起動を選ばずに閉じてください。起動した場合はそのアプリを閉じるとセットアップが続きます。'
-    Invoke-Installer $installer ($App.arguments -join ' ') -Interactive
-    # 対話画面で別の場所を選んだ場合も、登録されたインストール先から確認する。
-    $matchingAfterInstall = @(Get-InstalledApp $App.displayNamePattern |
-        Where-Object { $_.DisplayVersion -match $versionPattern })
-    $candidates = @($executable)
-    foreach ($entry in $matchingAfterInstall) {
-        if ($entry.InstallLocation) { $candidates += Join-Path $entry.InstallLocation $App.executable }
-        $icon = ($entry.DisplayIcon -replace ',\s*-?\d+$', '').Trim('"')
-        if ($icon -and $icon.EndsWith('.exe') -and (Split-Path -Leaf $icon) -notmatch 'unins|setup') {
-            $candidates += [Environment]::ExpandEnvironmentVariables($icon)
+    # Windows PowerShell 5.1はリダイレクトしたstderrをErrorRecordに変換する。
+    # この関数内だけContinueにし、通知を表示したまま終了コードで成否を判断する。
+    $ErrorActionPreference = 'Continue'
+    & $FilePath @Arguments 2>&1 | ForEach-Object {
+        if ($_ -is [System.Management.Automation.ErrorRecord]) {
+            if ($_.FullyQualifiedErrorId -notin @('NativeCommandError', 'NativeCommandErrorMessage')) {
+                throw $_ # 起動失敗など、stderr以外のPowerShellエラーは停止する。
+            }
+            Write-Host $_.ToString()
+        } else {
+            Write-Output $_
         }
     }
-    if ($matchingAfterInstall.Count -eq 0 -or
-        -not @($candidates | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }).Count) {
-        throw "$Name $($App.version) の登録バージョンと実行ファイルを確認できません。導入のキャンセルや保存先を確認してください。"
-    }
-    Write-Host "$Name の導入を確認しました。セットアップを続けます。"
+    # stdoutは呼び出し元へ返し、$LASTEXITCODEはネイティブ終了コードを保つ。
 }
 
 function Invoke-Checked {
@@ -95,7 +66,7 @@ function Invoke-Checked {
         [Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments
     )
 
-    & $FilePath @Arguments
+    Invoke-NativeOutput -FilePath $FilePath -Arguments $Arguments
     if ($LASTEXITCODE -ne 0) {
         throw "コマンドの実行に失敗しました（終了コード: $LASTEXITCODE）: $FilePath $($Arguments -join ' ')"
     }
@@ -154,7 +125,7 @@ try {
 
     $needMise = $true
     if (Test-Path $MiseExe) {
-        $versionOutput = & $MiseExe --version 2>$null
+        $versionOutput = Invoke-NativeOutput -FilePath $MiseExe -Arguments @('--version')
         if ($LASTEXITCODE -eq 0 -and $versionOutput -match [regex]::Escape($MiseVersion)) {
             $needMise = $false
         }
@@ -192,8 +163,9 @@ try {
     if ($SkipGui) {
         Write-Host "GitHub Actionsのクリーンbootstrap試験ではGUIアプリの導入を省略します。"
     } else {
-        Install-GuiApp 'gimp' $apps.gimp
-        Install-GuiApp 'kicad' $apps.kicad
+        Invoke-NativeOutput -FilePath $MiseExe -Arguments @('exec', '--', 'python', 'scripts/gui_tools.py', '--install-missing')
+        $GuiStatus = $LASTEXITCODE
+        if ($GuiStatus -notin @(0, 2)) { throw "標準GUIの導入に失敗しました。上の表示を確認してください。" }
     }
 
     Invoke-Checked -FilePath $MiseExe -Arguments @("exec", "--", "just", "doctor")
@@ -202,9 +174,10 @@ try {
     if ($SkipGui) {
         Write-Host "CLIセットアップが完了しました。GUIアプリは導入していません。"
     } else {
-        Write-Host "CLIと対話式GUIセットアップが完了しました。DYNAMIXEL Wizard 2 と必要なDocker/ドライバはREADMEの手動手順を確認してください。"
+        Write-Host "CLIセットアップが完了しました。標準GUIの結果は上の表示を確認してください。"
     }
     Write-Host "ターミナルを再起動し、just doctor-full でGUIを含めた準備を確認してください。"
+    if ($GuiStatus -eq 2) { exit 2 }
 }
 catch {
     Write-Host "エラー: セットアップに失敗しました: $($_.Exception.Message)" -ForegroundColor Red
