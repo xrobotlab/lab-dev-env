@@ -160,9 +160,10 @@ def create_portable_shortcut(app: dict, target: Path) -> int:
             "[Convert]::FromBase64String('" + source + "')); "
             "$c=[IO.File]::ReadAllText($p,[Text.UTF8Encoding]::new($false)); "
             "& ([ScriptBlock]::Create($c)) -RequestBase64 '" + request + "'")
-    encoded = base64.b64encode(code.encode("utf-16-le")).decode("ascii")
+    # EncodedCommand serializes WinPS 5.1 stderr as CLIXML, including duplicate Write-Host records.
+    # The loader is ASCII; Unicode paths and request values remain Base64 data.
     powershell = str(Path(os.environ["SystemRoot"]) / "System32/WindowsPowerShell/v1.0/powershell.exe")
-    result = captured([powershell, "-NoProfile", "-EncodedCommand", encoded])
+    result = captured([powershell, "-NoProfile", "-NonInteractive", "-OutputFormat", "Text", "-Command", code])
     if result.stdout:
         print(result.stdout.strip())
     if result.stderr:

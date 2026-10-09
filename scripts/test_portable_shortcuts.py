@@ -126,13 +126,58 @@ class PortableShortcutTests(unittest.TestCase):
         command = run.call_args.args[0]
         self.assertIn("-NoProfile", command)
         self.assertNotIn("-ExecutionPolicy", command)
-        code = base64.b64decode(command[-1]).decode("utf-16-le")
+        self.assertIn("-Command", command)
+        self.assertIn("-NonInteractive", command)
+        self.assertNotIn("-EncodedCommand", command)
+        code = command[-1]
+        self.assertTrue(code.isascii())
         payload = code.split("-RequestBase64 '", 1)[1].split("'", 1)[0]
         request = json.loads(base64.b64decode(payload).decode("utf-8"))
         self.assertEqual(request["target"], str(target))
         self.assertEqual(request["name"], app["name"])
         self.assertEqual(request["packageId"], app["winget"])
         self.assertNotIn("RunAs", code)
+
+    @unittest.skipUnless(os.name == "nt", "Windows PowerShell 5.1 output fixture")
+    def test_real_powershell_bridge_text_streams_and_exit_codes(self):
+        # Load a fake script through the production bridge; never touch real links/apps.
+        with tempfile.TemporaryDirectory() as directory:
+            fixture_root = Path(directory) / "日本語 & [1]!' fixture"
+            scripts = fixture_root / "scripts"
+            scripts.mkdir(parents=True)
+            (scripts / "ensure-portable-shortcut.ps1").write_text(
+                """param([string]$RequestBase64)
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+$request = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($RequestBase64)) | ConvertFrom-Json
+Write-Progress -Activity 'Preparing modules for first use.' -Status 'fixture 初回'
+Write-Host ('[追加] fixture ' + $request.name)
+Write-Host ('target: ' + $request.target)
+Write-Warning 'fixture 警告'
+[Console]::Error.WriteLine('fixture native stderr 日本語')
+if ($request.packageId -eq 'throw') { throw 'fixture 真の失敗' }
+if ($request.packageId -eq '7') { Write-Error 'fixture 真の失敗' -ErrorAction Continue }
+exit ([int]$request.packageId)
+""", encoding="utf-8")
+            target = Path("C:/fixture 日本語 & [1]!' 🌿/fixture.exe")
+            for status, expected in (("0", 0), ("2", 2), ("7", 1), ("throw", 1)):
+                with self.subTest(status=status), patch.object(gui, "ROOT", fixture_root):
+                    output = io.StringIO()
+                    with contextlib.redirect_stdout(output):
+                        result = gui.create_portable_shortcut(
+                            {"name": "日本語 🌿", "winget": status}, target)
+                    rendered = output.getvalue()
+                    self.assertEqual(result, expected)
+                    self.assertEqual(rendered.count("[追加] fixture 日本語 🌿"), 1)
+                    self.assertIn("target: " + str(target), rendered)
+                    self.assertIn("fixture 警告", rendered)
+                    self.assertIn("fixture native stderr 日本語", rendered)
+                    self.assertNotIn("#< CLIXML", rendered)
+                    self.assertNotIn("<Objs", rendered)
+                    self.assertNotIn("InformationRecord", rendered)
+                    self.assertNotIn("ProgressRecord", rendered)
+                    if expected == 1:
+                        self.assertIn("fixture 真の失敗", rendered)
 
     def test_rerun_repairs_shortcut_without_install_or_upgrade(self):
         app = self.apps[-1]
