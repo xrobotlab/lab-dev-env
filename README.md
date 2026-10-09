@@ -15,8 +15,8 @@ XRobotLabの研究室PC向け標準開発環境です。B3は次の順に進め�
 | Git | 未導入ならbootstrapが導入 | セットアップ前に用意 |
 | 共通ツール（コマンド）: mise、Python、Node.js/npm/npx、uv、just、gh、PlatformIO | bootstrapが導入 | bootstrapが導入 |
 | Python版DYNAMIXEL SDK 4.1.0 | bootstrapが `b3/.venv` に導入 | bootstrapが `b3/.venv` に導入 |
-| GIMP・KiCad・VS Code | wingetで不足分をユーザー単位で導入 | macOSは既存HomebrewでGIMP・VS Codeを導入、KiCadとLinuxは手動 |
-| Arduino IDE 2・Bambu Studio | wingetのportable形式で不足分を導入 | macOSは既存Homebrewで導入、Linuxは手動 |
+| GIMP・KiCad・VS Code | wingetで不足分をユーザー単位で導入 | macOS：GIMP・VS Codeは既存のHomebrewで導入。KiCadは手動導入。<br>Linux：GIMP・KiCad・VS Codeはいずれも手動導入。 |
+| Arduino IDE 2・Bambu Studio | wingetのportable形式で不足分を導入 | macOS：既存のHomebrewで導入。<br>Linux：いずれも手動導入。 |
 | DYNAMIXEL Wizard 2 | 手動導入 | 手動導入 |
 | Docker・Autodesk Fusion（任意） | 必要な場合だけ手動導入 | 必要な場合だけ手動導入（FusionのLinuxネイティブ版はなし） |
 
