@@ -38,13 +38,35 @@ function Invoke-Installer {
     if ($process.ExitCode -ne 0) { throw "インストーラーが失敗しました（終了コード: $($process.ExitCode)）: $FilePath" }
 }
 
+function Invoke-NativeOutput {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments
+    )
+
+    # Windows PowerShell 5.1はリダイレクトしたstderrをErrorRecordに変換する。
+    # この関数内だけContinueにし、通知を表示したまま終了コードで成否を判断する。
+    $ErrorActionPreference = 'Continue'
+    & $FilePath @Arguments 2>&1 | ForEach-Object {
+        if ($_ -is [System.Management.Automation.ErrorRecord]) {
+            if ($_.FullyQualifiedErrorId -notin @('NativeCommandError', 'NativeCommandErrorMessage')) {
+                throw $_ # 起動失敗など、stderr以外のPowerShellエラーは停止する。
+            }
+            Write-Host $_.ToString()
+        } else {
+            Write-Output $_
+        }
+    }
+    # stdoutは呼び出し元へ返し、$LASTEXITCODEはネイティブ終了コードを保つ。
+}
+
 function Invoke-Checked {
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
         [Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments
     )
 
-    & $FilePath @Arguments
+    Invoke-NativeOutput -FilePath $FilePath -Arguments $Arguments
     if ($LASTEXITCODE -ne 0) {
         throw "コマンドの実行に失敗しました（終了コード: $LASTEXITCODE）: $FilePath $($Arguments -join ' ')"
     }
@@ -103,7 +125,7 @@ try {
 
     $needMise = $true
     if (Test-Path $MiseExe) {
-        $versionOutput = & $MiseExe --version 2>$null
+        $versionOutput = Invoke-NativeOutput -FilePath $MiseExe -Arguments @('--version')
         if ($LASTEXITCODE -eq 0 -and $versionOutput -match [regex]::Escape($MiseVersion)) {
             $needMise = $false
         }
@@ -141,7 +163,7 @@ try {
     if ($SkipGui) {
         Write-Host "GitHub Actionsのクリーンbootstrap試験ではGUIアプリの導入を省略します。"
     } else {
-        & $MiseExe exec -- python scripts/gui_tools.py --install-missing
+        Invoke-NativeOutput -FilePath $MiseExe -Arguments @('exec', '--', 'python', 'scripts/gui_tools.py', '--install-missing')
         $GuiStatus = $LASTEXITCODE
         if ($GuiStatus -notin @(0, 2)) { throw "標準GUIの導入に失敗しました。上の表示を確認してください。" }
     }
