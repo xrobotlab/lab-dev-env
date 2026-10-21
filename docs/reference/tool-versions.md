@@ -6,7 +6,7 @@ CLI・SDKの固定値の正本は `mise.toml`、`mise.lock`、`config/windows-ap
 | --- | ---: | --- |
 | mise | 2026.10.3 | bootstrap |
 | Python | 3.13.16 | mise |
-| Node.js | 24.21.0 LTS | mise |
+| Node.js | 24.22.1 LTS | mise |
 | npm / npx | Node.js付属 | mise |
 | uv | 0.12.23 | mise |
 | just | 1.58.0 | mise |
