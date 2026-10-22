@@ -49,14 +49,29 @@ jobs:
           finally { Remove-Item -LiteralPath $temporaryRoot -Recurse -Force }
       - uses: jdx/mise-action@v5
         with:
-          version: 2026.10.3
+          version: 2026.10.17
           cache: true
       - name: 固定済みツールチェーンを導入
         run: mise install --locked
+      - name: PythonとPlatformIOの証明書依存を確認
+        shell: python
+        run: |
+          import os
+          import subprocess
+          from pathlib import Path
+          import pip
+          import pip._vendor.certifi as certifi
+          assert pip.__version__ == '26.2.2'
+          assert tuple(map(int, certifi.__version__.split('.'))) >= (2026, 10, 19)
+          root = Path(subprocess.check_output(['mise', 'where', 'pypi:platformio'], text=True).strip())
+          executable = root / '.mise-uv' / '.venv' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+          subprocess.run([str(executable), '-c', "import importlib.metadata as m; import pip._vendor.certifi as c; assert m.version('pip') == '26.2.2'; assert tuple(map(int, m.version('certifi').split('.'))) >= (2026, 10, 19); assert tuple(map(int, c.__version__.split('.'))) >= (2026, 10, 19)"], check=True)
+      - name: 既存B3 venvのPython更新を再現
+        run: uv venv --python 3.13.16 b3/.venv
       - name: B3共通環境を同期
         run: uv sync --locked --project b3
       - name: DYNAMIXEL SDKを確認
-        run: uv run --locked --project b3 python -c "import importlib.metadata as m; import dynamixel_sdk; assert m.version('dynamixel-sdk') == '4.1.0'"
+        run: uv run --locked --project b3 python -c "import sys; import importlib.metadata as m; import dynamixel_sdk; assert sys.version_info[:3] == (3, 13, 17); assert m.version('dynamixel-sdk') == '4.1.0'"
       - name: 標準CLIとB3 SDKのバージョン一覧を確認
         run: just versions
       - name: 診断の失敗判定と固定版の整合性を確認

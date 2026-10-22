@@ -2,8 +2,8 @@
 .gitattributes
 .github/workflows/validate.yml
 .gitignore
-.mise/locks/pypi-platformio/6.1.19/pyproject.toml
-.mise/locks/pypi-platformio/6.1.19/uv.lock
+.mise/locks/pypi-platformio/6.2.0/pyproject.toml
+.mise/locks/pypi-platformio/6.2.0/uv.lock
 README.md
 b3/.python-version
 b3/README.md

@@ -90,14 +90,14 @@ try {
 
     $expectedCommands = @{
         git = '2.56.0';
-        gh = '2.102.0';
-        mise = '2026.10.3';
-        python = '3.13.16';
+        gh = '2.102.1';
+        mise = '2026.10.17';
+        python = '3.13.17';
         node = '24.22.1';
         npm = '11.19.1';
-        uv = '0.12.23';
+        uv = '0.13.4';
         just = '1.58.0';
-        pio = '6.1.19'
+        pio = '6.2.0'
     }
     foreach ($entry in $expectedCommands.GetEnumerator()) {
         $resolved = Get-Command $entry.Key -ErrorAction Stop
