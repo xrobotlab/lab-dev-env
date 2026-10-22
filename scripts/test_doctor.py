@@ -43,13 +43,14 @@ class DoctorTests(unittest.TestCase):
 
     def test_homebrew_ca_is_read_only_and_uses_october_20(self):
         content = '[[package]]\nname = "certifi"\nversion = "2026.10.19"\n'
-        for version, expected in (("2026-10-19", 1), ("2026-10-20", 0), ("2026-10-20_1", 0)):
+        for version, marker in (("2026-10-19", "手動"), ("2026-10-20", "正常"), ("2026-10-20_1", "正常")):
             with self.subTest(version=version), patch.object(doctor.Path, "read_text", return_value=content), \
                  patch.object(doctor.importlib.metadata, "version", side_effect=doctor.importlib.metadata.PackageNotFoundError), \
                  patch.object(doctor.sys, "platform", "darwin"), patch.object(doctor.shutil, "which", return_value="brew"), \
                  patch.object(doctor, "run", return_value=(True, f"ca-certificates {version}")) as probe, \
-                 contextlib.redirect_stdout(io.StringIO()):
-                self.assertEqual(doctor.certificate_report(), expected)
+                 contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(doctor.certificate_report(), 0)
+                self.assertIn(f"[{marker}] brew CA", output.getvalue())
                 probe.assert_called_once_with(["brew", "list", "--versions", "ca-certificates"])
 
     def test_certificate_failure_reaches_doctor_exit(self):

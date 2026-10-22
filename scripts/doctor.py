@@ -100,8 +100,8 @@ def certificate_report() -> int:
             match = re.search(r"\b(\d{4})[-.](\d{2})[-.](\d{2})(?!\d)", detail)
             current = tuple(map(int, match.groups())) if match else ()
             ok = current >= (2026, 10, 20)
-            status(ok, "brew CA", f"{detail}（最低 2026-10-20; 更新は手動）")
-            failures += int(not ok)
+            # bootstrapが更新しない外部管理項目。古さは表示し、標準CLIとは分ける。
+            print(f"[{'正常' if ok else '手動'}] brew CA          {detail}（最低 2026-10-20; 更新は手動）")
         else:
             print("[情報] brew CA          未導入または取得不可。使用する場合は手動確認")
     return failures

@@ -39,7 +39,7 @@ GUIは現在の安定配布を導入し、既存版は保持します。KiCad 9.
 
 Pythonのlock作成時、miseの版一覧がstandaloneの公開に追随していなかったため、Pythonセクションだけ公式release assetのURLとSHA256を照合して更新しました。`mise install --locked` はその配布物を使います。通常のlock再生成時もPythonが3.13.16へ戻っていないことを確認してください。
 
-`just doctor` はこのリポジトリのB3/PlatformIO lock内のcertifi、および実行中Python環境に存在するcertifi/pipの古い版を失敗として報告します。PlatformIO lockのpipにはPython 3.9用の互換分岐が残りますが、標準Python 3.13では26.2.2を使用します。uv管理のB3 venvにpipやcertifiが無いことは正常です。macOSでHomebrewがある場合は、導入済みca-certificatesの日付も読み取り専用で確認します。診断はOSの信頼ストアや独自CA束の安全性を保証しません。
+`just doctor` はこのリポジトリのB3/PlatformIO lock内のcertifi、および実行中Python環境に存在するcertifi/pipの古い版を失敗として報告します。PlatformIO lockのpipにはPython 3.9用の互換分岐が残りますが、標準Python 3.13では26.2.2を使用します。uv管理のB3 venvにpipやcertifiが無いことは正常です。macOSでHomebrewがある場合は、導入済みca-certificatesの日付も読み取り専用で確認し、古い場合は「手動」と表示します。Homebrew CAはbootstrapが更新しない外部管理項目のため、標準CLIの失敗件数には含めません。診断はOSの信頼ストアや独自CA束の安全性を保証しません。
 
 公開依存の監査では、B3の2依存とWindowsの標準Python 3.13.17に選ばれたPlatformIO実環境22依存は既知の指摘なしでした。専用lock全分岐の `uv audit --frozen` はPython 3.9用の旧版（anyio、marshmallow、pip、requests、starlette、urllib3）に指摘を返します。標準環境で使う分岐とは区別し、全分岐の監査成功とは扱いません。Python 3.9でこのlockを流用することは対象外です。
 
