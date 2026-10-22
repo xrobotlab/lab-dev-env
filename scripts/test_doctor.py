@@ -18,6 +18,50 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class DoctorTests(unittest.TestCase):
+    def test_certificate_locks_reject_old_pins(self):
+        for version, expected in (("2026.7.22", 2), ("2026.10.19", 0), ("2026.10.19rc1", 2)):
+            content = f'[[package]]\nname = "certifi"\nversion = "{version}"\n'
+            with self.subTest(version=version), patch.object(doctor.Path, "read_text", return_value=content), \
+                 patch.object(doctor.importlib.metadata, "version", side_effect=doctor.importlib.metadata.PackageNotFoundError), \
+                 patch.object(doctor.sys, "platform", "linux"), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(doctor.certificate_report(), expected)
+
+    def test_certificate_lock_missing_or_unreadable_fails(self):
+        for value in ('[[package]]\nname = "pyserial"\nversion = "3.5"\n', 'invalid toml'):
+            with self.subTest(value=value), patch.object(doctor.Path, "read_text", return_value=value), \
+                 patch.object(doctor.importlib.metadata, "version", side_effect=doctor.importlib.metadata.PackageNotFoundError), \
+                 patch.object(doctor.sys, "platform", "linux"), contextlib.redirect_stdout(io.StringIO()):
+                self.assertGreater(doctor.certificate_report(), 0)
+
+    def test_existing_venv_pip_and_certifi_are_checked(self):
+        content = '[[package]]\nname = "certifi"\nversion = "2026.10.19"\n'
+        for versions, expected in ((("2026.7.22", "26.2.1"), 2), (("2026.10.19", "26.2.2"), 0)):
+            with self.subTest(versions=versions), patch.object(doctor.Path, "read_text", return_value=content), \
+                 patch.object(doctor.importlib.metadata, "version", side_effect=versions), \
+                 patch.object(doctor.sys, "platform", "linux"), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(doctor.certificate_report(), expected)
+
+    def test_homebrew_ca_is_read_only_and_uses_october_20(self):
+        content = '[[package]]\nname = "certifi"\nversion = "2026.10.19"\n'
+        for version, marker in (("2026-10-19", "手動"), ("2026-10-20", "正常"), ("2026-10-20_1", "正常")):
+            with self.subTest(version=version), patch.object(doctor.Path, "read_text", return_value=content), \
+                 patch.object(doctor.importlib.metadata, "version", side_effect=doctor.importlib.metadata.PackageNotFoundError), \
+                 patch.object(doctor.sys, "platform", "darwin"), patch.object(doctor.shutil, "which", return_value="brew"), \
+                 patch.object(doctor, "run", return_value=(True, f"ca-certificates {version}")) as probe, \
+                 contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(doctor.certificate_report(), 0)
+                self.assertIn(f"[{marker}] brew CA", output.getvalue())
+                probe.assert_called_once_with(["brew", "list", "--versions", "ca-certificates"])
+
+    def test_certificate_failure_reaches_doctor_exit(self):
+        with patch.object(sys, "argv", ["doctor"]), patch.object(doctor.shutil, "which", return_value="tool.exe"), \
+             patch.object(doctor, "run", return_value=(True, " ".join(doctor.EXPECTED.values()))), \
+             patch.object(doctor.importlib.metadata, "version", return_value="4.1.0"), \
+             patch.object(doctor, "certificate_report", return_value=1), patch.object(doctor, "serial_report"), \
+             patch.object(doctor, "gui_report", return_value=0), patch.object(doctor, "docker_report"), \
+             contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(doctor.main(), 1)
+
     def test_cli_ready_does_not_hide_missing_gui(self):
         for required, expected_exit in ((False, 0), (True, 1)):
             with self.subTest(required=required), contextlib.redirect_stdout(io.StringIO()) as output:
@@ -26,6 +70,7 @@ class DoctorTests(unittest.TestCase):
                      patch.object(doctor, "run", return_value=(True, " ".join(doctor.EXPECTED.values()))), \
                      patch.object(doctor.importlib.metadata, "version", return_value="4.1.0"), \
                      patch.object(doctor, "serial_report"), patch.object(doctor, "gui_report", return_value=3), \
+                     patch.object(doctor, "certificate_report", return_value=0), \
                      patch.object(doctor, "docker_report"):
                     self.assertEqual(doctor.main(), expected_exit)
                 self.assertIn("未完了" if required else "GUI未検出 3 件", output.getvalue())
@@ -75,6 +120,12 @@ class DoctorTests(unittest.TestCase):
         config = tomllib.loads((ROOT / "mise.toml").read_text())
         lock = tomllib.loads((ROOT / "mise.lock").read_text())
         entry = lock["tools"]["gh"][0]
+        for name, version in config["tools"].items():
+            with self.subTest(tool=name):
+                locked = lock["tools"][name][0]
+                self.assertEqual(locked["version"], version)
+                self.assertEqual(doctor.EXPECTED[name.removeprefix("pypi:")], version)
+        self.assertEqual((ROOT / "b3/.python-version").read_text().strip(), doctor.EXPECTED["python"])
         self.assertEqual(entry["version"], config["tools"]["gh"])
         self.assertEqual(entry["version"], doctor.EXPECTED["gh"])
         for platform in ("windows-x64", "linux-x64", "linux-arm64", "macos-x64", "macos-arm64"):

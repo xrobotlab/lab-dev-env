@@ -4,9 +4,11 @@ import importlib.metadata
 import argparse
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 import gui_tools
@@ -24,13 +26,13 @@ if os.name == "nt":
         pass
 
 EXPECTED = {
-    "mise": "2026.10.3",
-    "python": "3.13.16",
+    "mise": "2026.10.17",
+    "python": "3.13.17",
     "node": "24.22.1",
-    "uv": "0.12.23",
+    "uv": "0.13.4",
     "just": "1.58.0",
-    "gh": "2.102.0",
-    "platformio": "6.1.19",
+    "gh": "2.102.1",
+    "platformio": "6.2.0",
     "dynamixel-sdk": "4.1.0",
 }
 
@@ -54,6 +56,55 @@ def status(ok: bool, name: str, detail: str) -> None:
 
 def gui_report() -> int:
     return gui_tools.report()
+
+
+def certificate_report() -> int:
+    """公開の管理対象lockと実行中venvだけを確認する（通信・更新なし）。"""
+    print("\n証明書依存（OSの信頼ストア・独自CA設定は手動確認）")
+    failures = 0
+    minimums = {"certifi": (2026, 10, 19), "pip": (26, 2, 2)}
+
+    def check(name: str, version: str, location: str) -> None:
+        nonlocal failures
+        parts = version.split(".")
+        ok = len(parts) >= 3 and all(part.isdigit() for part in parts)
+        ok = ok and tuple(map(int, parts)) >= minimums[name]
+        status(ok, name, f"{version} ({location}; 最低 {'.'.join(map(str, minimums[name]))})")
+        failures += int(not ok)
+
+    root = Path(__file__).resolve().parents[1]
+    locks = [root / "b3/uv.lock",
+             root / f".mise/locks/pypi-platformio/{EXPECTED['platformio']}/uv.lock"]
+    for path in locks:
+        try:
+            packages = tomllib.loads(path.read_text(encoding="utf-8"))["package"]
+            for package in packages:
+                # pipにはPython 3.9用の互換分岐もあるため、実行環境側で確認する。
+                if package["name"] == "certifi":
+                    check(package["name"], package["version"], str(path.relative_to(root)))
+            if path == locks[1] and not any(p["name"] == "certifi" for p in packages):
+                raise ValueError("PlatformIO lockにcertifiがありません")
+        except (OSError, ValueError, KeyError) as exc:
+            status(False, "証明書lock", f"{path.relative_to(root)}: {exc}")
+            failures += 1
+
+    for name in minimums:
+        try:
+            check(name, importlib.metadata.version(name), "実行中Python環境")
+        except importlib.metadata.PackageNotFoundError:
+            print(f"[情報] {name:<16} 実行中Python環境に未導入（uv管理venvでは正常）")
+
+    if sys.platform == "darwin" and (brew := shutil.which("brew")):
+        ok, detail = run([brew, "list", "--versions", "ca-certificates"])
+        if ok and detail:
+            match = re.search(r"\b(\d{4})[-.](\d{2})[-.](\d{2})(?!\d)", detail)
+            current = tuple(map(int, match.groups())) if match else ()
+            ok = current >= (2026, 10, 20)
+            # bootstrapが更新しない外部管理項目。古さは表示し、標準CLIとは分ける。
+            print(f"[{'正常' if ok else '手動'}] brew CA          {detail}（最低 2026-10-20; 更新は手動）")
+        else:
+            print("[情報] brew CA          未導入または取得不可。使用する場合は手動確認")
+    return failures
 
 
 def docker_report() -> None:
@@ -167,6 +218,7 @@ def main() -> int:
         status(False, "dynamixel-sdk", "B3環境にインストールされていません")
         failures += 1
 
+    failures += certificate_report()
     serial_report()
     gui_missing = gui_report()
     docker_report()

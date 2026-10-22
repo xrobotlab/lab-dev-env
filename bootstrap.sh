@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-MISE_VERSION="2026.10.3"
+MISE_VERSION="2026.10.17"
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 MISE_BIN="$HOME/.local/bin/mise"
 
@@ -31,10 +31,10 @@ if [ "$need_mise" -eq 1 ]; then
     os=$(uname -s)
     arch=$(uname -m)
     case "$os:$arch" in
-        Linux:x86_64) asset_os="linux"; asset_arch="x64"; sha256="04147c68e946902f5226dfdcd54d19907aed3cf54d95b2f27d2b9c778bb26f9e" ;;
-        Linux:aarch64|Linux:arm64) asset_os="linux"; asset_arch="arm64"; sha256="e79866e32624b346f6854d93ca8a24294516cd7c0b48ce0e80af508fb7c3d8b8" ;;
-        Darwin:x86_64) asset_os="macos"; asset_arch="x64"; sha256="791b92b446729c53e6501acd2b84ea207f541659ca9d0480c9c70c291919a321" ;;
-        Darwin:arm64) asset_os="macos"; asset_arch="arm64"; sha256="28ecc8640b0a28dab52817766f37fecfd898f1dff82e03f36fcb072e971f9246" ;;
+        Linux:x86_64) asset_os="linux"; asset_arch="x64"; sha256="17565e268c5542d8ce944321e17af81e0b741b65af4aa7e8e010ee77376a4aa3" ;;
+        Linux:aarch64|Linux:arm64) asset_os="linux"; asset_arch="arm64"; sha256="cac510e51793ad45e65fe92305bdbe4309c9c60b5907badbc7eba111738ab08f" ;;
+        Darwin:x86_64) asset_os="macos"; asset_arch="x64"; sha256="e42418100e2f781f9be00b9feaa60378e77551741faececc2bf360992c5410c8" ;;
+        Darwin:arm64) asset_os="macos"; asset_arch="arm64"; sha256="d7c50c1683524a764260986ccc9c41c0de5e1fcd491714b5640b657b76781af6" ;;
         *)
             echo "エラー: 未対応のプラットフォームです: $os $arch" >&2
             exit 1

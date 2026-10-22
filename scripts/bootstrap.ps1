@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
 
-$MiseVersion = "2026.10.3"
+$MiseVersion = "2026.10.17"
 $RepoRoot = $env:LAB_DEV_ENV_ROOT.TrimEnd("\")
 $MiseRoot = Join-Path $env:LOCALAPPDATA "mise"
 $MiseBinDir = Join-Path $MiseRoot "bin"
@@ -86,7 +86,7 @@ try {
     $arch = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()
     switch ($arch) {
         "x64" {
-            $miseSha256 = "af5cad4d381c4e06e9c488af86ad3d3159474ffa7a18e061436a408f7262f23a"
+            $miseSha256 = "32bcfda5f72bf7cb189e18ba93c2798bffcb4a678fd004e3127780363f2d8c8c"
         }
         default {
             throw "Windowsの対応範囲はx64です（現在: $arch）。mise.lockとGUI配布物の対応範囲をREADMEで確認してください。"

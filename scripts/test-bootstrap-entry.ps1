@@ -106,7 +106,7 @@ try {
     foreach ($private in @('.env', 'mise.local.toml', 'README.md.bak', 'b3/.venv')) {
         Assert-True (-not (Test-Path -LiteralPath (Join-Path $fixture.Target $private))) "ユーザー状態をコピーしてはいけません: $private"
     }
-    Assert-True (Test-Path -LiteralPath (Join-Path $fixture.Target '.mise/locks/pypi-platformio/6.1.19/uv.lock')) '必要な隠しlockを残します。'
+    Assert-True (Test-Path -LiteralPath (Join-Path $fixture.Target '.mise/locks/pypi-platformio/6.2.0/uv.lock')) '必要な隠しlockを残します。'
     Assert-True ([IO.File]::ReadAllText((Join-Path $fixture.Target 'location.txt'), $utf8) -eq $fixture.Target) '空白・日本語・特殊文字を含む配置先で実行します。'
     Assert-True ($script:LastConsole.Output.Contains('完了。この画面を閉じて構いません。')) '成功したときだけ閉じてよいと伝えます。'
     Assert-True ($script:LastConsole.Output.IndexOf('閉じないでください') -lt $script:LastConsole.Output.IndexOf('fixture engine result')) '待機案内は本体実行前に出します。'
